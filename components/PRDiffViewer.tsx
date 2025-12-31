@@ -123,7 +123,7 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
         <h2 className="font-semibold mb-2">
           Files changed ({files.length})
         </h2>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2">
           {files.map((file) => (
             <a
               key={file.path}
