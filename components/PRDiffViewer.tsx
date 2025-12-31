@@ -147,26 +147,111 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
         )}
       </div>
 
-      {/* File Diffs */}
+      {/* Diffs grouped by reasoning/logical chunks */}
       <div className="space-y-6">
-        {files.map((file) => {
-          const diffContent = file.hunks
-            .map((hunk) => hunk.header + '\n' + hunk.content)
-            .join('');
+        {(() => {
+          // Group by reasoning
+          const reasoningGroups = new Map<
+            string,
+            Array<{
+              filePath: string;
+              commitSha: string;
+              commitMessage: string;
+              hunkNumbers: number[];
+            }>
+          >();
 
-          return (
-            <div
-              key={file.path}
-              id={`file-${file.path.replace(/\//g, '-')}`}
-            >
-              <DiffViewer
-                diff={diffContent}
-                filename={file.path}
-                tracking={file.tracking.length > 0 ? file.tracking : undefined}
-              />
-            </div>
-          );
-        })}
+          // Collect all reasoning -> file mappings
+          files.forEach((file) => {
+            file.tracking.forEach((track) => {
+              const key = `${track.reasoning}|${track.commitSha}`;
+              if (!reasoningGroups.has(key)) {
+                reasoningGroups.set(key, []);
+              }
+              reasoningGroups.get(key)!.push({
+                filePath: file.path,
+                commitSha: track.commitSha,
+                commitMessage: track.commitMessage,
+                hunkNumbers: track.hunkNumbers,
+              });
+            });
+          });
+
+          // If no tracking, fall back to file-based display
+          if (reasoningGroups.size === 0) {
+            return files.map((file) => {
+              const diffContent = file.hunks
+                .map((hunk) => hunk.header + '\n' + hunk.content)
+                .join('');
+
+              return (
+                <div
+                  key={file.path}
+                  id={`file-${file.path.replace(/\//g, '-')}`}
+                  className="border rounded-lg overflow-hidden"
+                >
+                  <div className="bg-gray-50 px-4 py-2 font-mono text-sm border-b">
+                    {file.path}
+                  </div>
+                  <DiffViewer diff={diffContent} filename={file.path} />
+                </div>
+              );
+            });
+          }
+
+          // Render by reasoning
+          return Array.from(reasoningGroups.entries()).map(([key, fileInfos], idx) => {
+            const reasoning = key.split('|')[0];
+            const commitSha = fileInfos[0].commitSha;
+            const commitMessage = fileInfos[0].commitMessage;
+
+            return (
+              <div key={idx} className="border rounded-lg overflow-hidden">
+                {/* Reasoning Header */}
+                <div className="bg-blue-50 border-b border-blue-200 px-4 py-3">
+                  <div className="flex items-start gap-2 mb-2">
+                    <div className="flex-shrink-0 w-2 h-2 mt-1.5 bg-blue-500 rounded-full"></div>
+                    <p className="text-sm font-medium text-blue-900">{reasoning}</p>
+                  </div>
+                  <div className="text-xs text-blue-700 ml-4">
+                    <code className="bg-blue-100 px-2 py-0.5 rounded">
+                      {commitSha.substring(0, 7)}
+                    </code>
+                    {' '}
+                    {commitMessage.split('\n')[0]}
+                  </div>
+                </div>
+
+                {/* Files for this reasoning */}
+                <div className="divide-y divide-gray-200">
+                  {fileInfos.map((fileInfo, fileIdx) => {
+                    const file = files.find((f) => f.path === fileInfo.filePath);
+                    if (!file) return null;
+
+                    const selectedHunks = fileInfo.hunkNumbers
+                      .map((hunkNum) => file.hunks[hunkNum - 1])
+                      .filter((h) => h != null);
+
+                    if (selectedHunks.length === 0) return null;
+
+                    const diffContent = selectedHunks
+                      .map((hunk) => hunk.header + '\n' + hunk.content)
+                      .join('');
+
+                    return (
+                      <div key={fileIdx} id={`file-${file.path.replace(/\//g, '-')}`}>
+                        <div className="bg-gray-50 px-4 py-2 font-mono text-sm border-b">
+                          {file.path}
+                        </div>
+                        <DiffViewer diff={diffContent} filename={file.path} />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          });
+        })()}
       </div>
 
       {files.length === 0 && (
