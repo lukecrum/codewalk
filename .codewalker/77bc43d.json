@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "commit": "77bc43d",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Remove dark mode support from globals.css. The diff2html component uses a light background, which makes dark mode text (light colored) completely unreadable. Since the diff viewer is the core functionality of the app, we removed the dark mode media query entirely. Also added color-scheme: light to force all browser-provided UI elements (scrollbars, inputs, etc.) to use light mode styling.",
+      "files": [
+        { "path": "app/globals.css", "hunks": [1] }
+      ]
+    },
+    {
+      "reasoning": "Add explicit darkMode configuration to Tailwind config for clarity. While we've removed all dark mode styles, setting darkMode: 'media' documents that this was a conscious decision and prevents future confusion. The comment explains that dark styles have been removed intentionally.",
+      "files": [
+        { "path": "tailwind.config.ts", "hunks": [1] }
+      ]
+    }
+  ]
+}
