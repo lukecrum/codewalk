@@ -80,6 +80,8 @@ If it's a distinct new task, create a new commit and new tracking file.
 
 Do not wait for the user to ask for the tracking file—create it automatically as part of finishing each task.
 
+**Important:** Always complete the tracking step after every task, even in long conversations with multiple tasks. Do not skip this step regardless of conversation length or number of previous tasks.
+
 ## Walkthrough Example
 
 <CODEBASE file="task-manager.html">
