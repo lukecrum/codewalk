@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "commit": "dbbbbd3",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Add tab navigation system to PR viewer. Replaced the collapsible 'Files changed' section with a tab-based interface. Added state management for active tab ('changes' or 'files') and created a clean tab switcher with blue highlighting for the active tab.",
+      "files": [
+        {
+          "path": "components/PRDiffViewer.tsx",
+          "hunks": [1, 2]
+        }
+      ]
+    },
+    {
+      "reasoning": "Create Files Changed tab with plain diff view. Added a new tab that shows all files with complete diffs in a simple file-based organization, without any reasoning markup. This provides an alternative view for users who want to see the traditional file-by-file diff layout.",
+      "files": [
+        {
+          "path": "components/PRDiffViewer.tsx",
+          "hunks": [3]
+        }
+      ]
+    }
+  ]
+}
