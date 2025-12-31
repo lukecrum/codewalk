@@ -10,7 +10,7 @@
       ]
     },
     {
-      "reasoning": "Improve parseHunks to handle edge cases in diff format. Added filtering to ignore file markers (--- and +++) that start hunks but aren't actual diff lines, handle empty lines as context, and skip special git markers like '\\\ No newline at end of file'. This makes the parser more robust against real-world diff variations.",
+      "reasoning": "Improve parseHunks to handle edge cases in diff format. Added filtering to ignore file markers (--- and +++) that start hunks but aren't actual diff lines, handle empty lines as context, and skip special git markers like 'No newline at end of file'. This makes the parser more robust against real-world diff variations.",
       "files": [
         { "path": "lib/github.ts", "hunks": [2] }
       ]
