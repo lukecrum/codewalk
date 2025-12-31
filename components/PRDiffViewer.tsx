@@ -44,6 +44,7 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
   const [files, setFiles] = useState<FileWithTracking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filesExpanded, setFilesExpanded] = useState(false);
 
   useEffect(() => {
     const fetchPRDiff = async () => {
@@ -119,21 +120,31 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
       </div>
 
       {/* Files Changed Summary */}
-      <div className="bg-white border rounded-lg p-4">
-        <h2 className="font-semibold mb-2">
-          Files changed ({files.length})
-        </h2>
-        <div className="flex flex-col gap-2">
-          {files.map((file) => (
-            <a
-              key={file.path}
-              href={`#file-${file.path.replace(/\//g, '-')}`}
-              className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
-            >
-              {file.path}
-            </a>
-          ))}
-        </div>
+      <div className="bg-white border rounded-lg overflow-hidden">
+        <button
+          onClick={() => setFilesExpanded(!filesExpanded)}
+          className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+        >
+          <h2 className="font-semibold">
+            Files changed ({files.length})
+          </h2>
+          <span className={`text-gray-500 text-sm transition-transform ${filesExpanded ? 'rotate-180' : ''}`}>
+            ▼
+          </span>
+        </button>
+        {filesExpanded && (
+          <div className="border-t px-4 py-3 flex flex-col gap-2">
+            {files.map((file) => (
+              <a
+                key={file.path}
+                href={`#file-${file.path.replace(/\//g, '-')}`}
+                className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                {file.path}
+              </a>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* File Diffs */}
