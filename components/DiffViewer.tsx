@@ -4,27 +4,18 @@ import { useEffect, useRef } from 'react';
 import * as Diff2Html from 'diff2html';
 import 'diff2html/bundles/css/diff2html.min.css';
 
-type TrackingInfo = {
-  commitSha: string;
-  commitMessage: string;
-  reasoning: string;
-  hunkNumbers: number[];
-};
-
 type DiffViewerProps = {
   diff: string;
   filename: string;
-  tracking?: TrackingInfo[];
   indent?: boolean;
 };
 
-export default function DiffViewer({ diff, filename, tracking, indent = false }: DiffViewerProps) {
+export default function DiffViewer({ diff, filename, indent = false }: DiffViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!containerRef.current || !diff) return;
 
-    // Create a unified diff format that diff2html expects
     const unifiedDiff = `--- a/${filename}
 +++ b/${filename}
 ${diff}`;
@@ -34,16 +25,20 @@ ${diff}`;
       matching: 'lines',
       outputFormat: 'side-by-side',
       renderNothingWhenEmpty: false,
-      fileListToggle: false,
-      fileContentToggle: false,
     });
 
     containerRef.current.innerHTML = html;
-  }, [diff, filename, tracking]);
+  }, [diff, filename]);
 
   if (!diff) {
     return null;
   }
 
-  return <div ref={containerRef} className="diff-viewer" style={indent ? { marginLeft: '2rem', marginRight: '2rem' } : {}} />;
+  return (
+    <div
+      ref={containerRef}
+      className="diff-viewer"
+      style={indent ? { marginLeft: '1rem', marginRight: '1rem' } : undefined}
+    />
+  );
 }

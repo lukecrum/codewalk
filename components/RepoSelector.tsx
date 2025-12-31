@@ -1,6 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Search, Lock, Globe, ExternalLink, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type Repo = {
   id: number;
@@ -18,6 +24,36 @@ type RepoSelectorProps = {
   onSelectRepo: (owner: string, repo: string) => void;
   onManualEntry: () => void;
 };
+
+const languageColors: Record<string, string> = {
+  TypeScript: 'bg-blue-500',
+  JavaScript: 'bg-yellow-400',
+  Python: 'bg-green-500',
+  Rust: 'bg-orange-500',
+  Go: 'bg-cyan-500',
+  Java: 'bg-red-500',
+  Ruby: 'bg-red-400',
+  'C++': 'bg-pink-500',
+  C: 'bg-gray-500',
+  'C#': 'bg-purple-500',
+  PHP: 'bg-indigo-400',
+  Swift: 'bg-orange-400',
+  Kotlin: 'bg-purple-400',
+};
+
+function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'today';
+  if (diffDays === 1) return 'yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+  return `${Math.floor(diffDays / 365)} years ago`;
+}
 
 export default function RepoSelector({ token, onSelectRepo, onManualEntry }: RepoSelectorProps) {
   const [repos, setRepos] = useState<Repo[]>([]);
@@ -43,8 +79,9 @@ export default function RepoSelector({ token, onSelectRepo, onManualEntry }: Rep
 
         setRepos(data.repos);
         setFilteredRepos(data.repos);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -71,8 +108,17 @@ export default function RepoSelector({ token, onSelectRepo, onManualEntry }: Rep
 
   if (loading) {
     return (
-      <div className="text-center py-8">
-        <div className="text-gray-600">Loading your repositories...</div>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-8 w-24" />
+        </div>
+        <Skeleton className="h-10 w-full" />
+        <div className="space-y-2">
+          {[...Array(5)].map((_, i) => (
+            <Skeleton key={i} className="h-20 w-full" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -80,16 +126,14 @@ export default function RepoSelector({ token, onSelectRepo, onManualEntry }: Rep
   if (error) {
     return (
       <div className="space-y-4">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800 font-medium">Error loading repositories</p>
-          <p className="text-red-700 text-sm mt-1">{error}</p>
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+          <p className="text-destructive font-medium text-sm">Failed to load repositories</p>
+          <p className="text-destructive/80 text-sm mt-1">{error}</p>
         </div>
-        <button
-          onClick={onManualEntry}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
-        >
+        <Button onClick={onManualEntry} className="w-full">
+          <ExternalLink className="h-4 w-4 mr-2" />
           Enter Repository Manually
-        </button>
+        </Button>
       </div>
     );
   }
@@ -97,70 +141,85 @@ export default function RepoSelector({ token, onSelectRepo, onManualEntry }: Rep
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">Select a Repository</h2>
-        <button
-          onClick={onManualEntry}
-          className="text-sm text-blue-600 hover:text-blue-800"
-        >
+        <h3 className="font-medium">Your Repositories</h3>
+        <Button variant="ghost" size="sm" onClick={onManualEntry}>
           Enter manually
-        </button>
+        </Button>
       </div>
 
-      <input
-        type="text"
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        placeholder="Search repositories..."
-        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search repositories..."
+          className="pl-9"
+        />
+      </div>
 
-      <div className="text-sm text-gray-600">
+      <p className="text-sm text-muted-foreground">
         {filteredRepos.length} {filteredRepos.length === 1 ? 'repository' : 'repositories'}
-      </div>
+        {searchQuery && ` matching "${searchQuery}"`}
+      </p>
 
-      <div className="space-y-2 max-h-[600px] overflow-y-auto">
-        {filteredRepos.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No repositories found matching "{searchQuery}"
-          </div>
-        ) : (
-          filteredRepos.map((repo) => (
-            <button
-              key={repo.id}
-              onClick={() => onSelectRepo(repo.owner, repo.name)}
-              className="w-full text-left p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-blue-600 truncate">
-                      {repo.full_name}
-                    </span>
-                    {repo.private && (
-                      <span className="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded">
-                        Private
+      <ScrollArea className="h-[400px] pr-4 -mr-4">
+        <div className="space-y-2">
+          {filteredRepos.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <p>No repositories found</p>
+              {searchQuery && (
+                <p className="text-sm mt-1">Try a different search term</p>
+              )}
+            </div>
+          ) : (
+            filteredRepos.map((repo) => (
+              <button
+                key={repo.id}
+                onClick={() => onSelectRepo(repo.owner, repo.name)}
+                className="w-full text-left p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors group"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="font-medium text-foreground group-hover:text-primary transition-colors truncate">
+                        {repo.full_name}
                       </span>
+                      {repo.private ? (
+                        <Badge variant="outline" className="shrink-0 text-xs gap-1">
+                          <Lock className="h-3 w-3" />
+                          Private
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="shrink-0 text-xs gap-1">
+                          <Globe className="h-3 w-3" />
+                          Public
+                        </Badge>
+                      )}
+                    </div>
+
+                    {repo.description && (
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                        {repo.description}
+                      </p>
                     )}
-                    {repo.language && (
-                      <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-700 rounded">
-                        {repo.language}
-                      </span>
-                    )}
+
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      {repo.language && (
+                        <span className="flex items-center gap-1.5">
+                          <span className={`w-2.5 h-2.5 rounded-full ${languageColors[repo.language] || 'bg-gray-400'}`} />
+                          {repo.language}
+                        </span>
+                      )}
+                      <span>Updated {formatDate(repo.updated_at)}</span>
+                    </div>
                   </div>
-                  {repo.description && (
-                    <p className="text-sm text-gray-600 overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                      {repo.description}
-                    </p>
-                  )}
-                  <p className="text-xs text-gray-500 mt-1">
-                    Updated {new Date(repo.updated_at).toLocaleDateString()}
-                  </p>
                 </div>
-              </div>
-            </button>
-          ))
-        )}
-      </div>
+              </button>
+            ))
+          )}
+        </div>
+      </ScrollArea>
     </div>
   );
 }
