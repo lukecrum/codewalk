@@ -102,7 +102,9 @@ export default function Home() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Required for private repos or higher rate limits
+                Leave blank to use GITHUB_TOKEN from .env.local (if set).
+                <br />
+                For private repos, token needs 'repo' scope.
               </p>
             </div>
             <button
