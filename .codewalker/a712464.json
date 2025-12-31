@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "commit": "a712464",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Fix JSON escaping error in tracking file 2c4e86e.json. The file contained literal backslashes in the description which caused JSON.parse() to fail with 'Bad escaped character' error. Removed the backslashes from the git marker description to make the JSON valid and prevent API errors when fetching tracking files.",
+      "files": [
+        { "path": ".codewalker/2c4e86e.json", "hunks": [1] }
+      ]
+    }
+  ]
+}

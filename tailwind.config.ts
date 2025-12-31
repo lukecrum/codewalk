@@ -6,6 +6,7 @@ const config: Config = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+  darkMode: 'media', // Explicitly set to media query (but we removed the dark styles)
   theme: {
     extend: {
       colors: {

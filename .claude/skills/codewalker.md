@@ -75,6 +75,7 @@ If it's a distinct new task, create a new commit and new tracking file.
 3. Write reasoning that explains *why*, not just *what* (the diff already shows what)
 4. If a follow-up request refines previous work, amend the commit and update the tracking file
 5. If a follow-up request is a new task, create a new commit and new tracking file
+6. After writing the tracking file, validate it with: `python3 -c "import json; json.load(open('.codewalker/<commit-hash>.json'))"`
 
 Do not wait for the user to ask for the tracking file—create it automatically as part of finishing each task.
 
