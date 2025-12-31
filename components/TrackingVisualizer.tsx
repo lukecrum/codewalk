@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Brain } from 'lucide-react';
 import { Changeset, CommitInfo, ParsedHunk } from '@/types/codewalker';
 import DiffViewer from './DiffViewer';
 
@@ -105,13 +106,12 @@ export default function TrackingVisualizer({
       {tracking && (
         <div className="space-y-6">
           {tracking.changes.map((change, changeIdx) => (
-            <div key={changeIdx} className="border rounded-lg overflow-hidden shadow-sm">
+            <div key={changeIdx} className="border border-blue-200 rounded-lg overflow-hidden shadow-sm">
               {/* Reasoning Header - Main organizational unit */}
-              <div className="bg-blue-50 border-b border-blue-200 px-6 py-4">
+              <div style={{ backgroundColor: '#dbeafe' }} className="px-6 py-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-2 h-2 mt-2 bg-blue-500 rounded-full"></div>
                   <div className="flex-1">
-                    <p className="text-base text-blue-900 leading-relaxed">{change.reasoning}</p>
+                    <p className="text-base text-blue-900 leading-relaxed font-medium">{change.reasoning}</p>
                   </div>
                 </div>
               </div>

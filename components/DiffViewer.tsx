@@ -15,9 +15,10 @@ type DiffViewerProps = {
   diff: string;
   filename: string;
   tracking?: TrackingInfo[];
+  indent?: boolean;
 };
 
-export default function DiffViewer({ diff, filename, tracking }: DiffViewerProps) {
+export default function DiffViewer({ diff, filename, tracking, indent = false }: DiffViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -44,5 +45,5 @@ ${diff}`;
     return null;
   }
 
-  return <div ref={containerRef} className="diff-viewer" />;
+  return <div ref={containerRef} className="diff-viewer" style={indent ? { marginLeft: '2rem', marginRight: '2rem' } : {}} />;
 }
