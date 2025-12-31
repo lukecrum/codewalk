@@ -206,19 +206,20 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
             const commitMessage = fileInfos[0].commitMessage;
 
             return (
-              <div key={idx} className="border rounded-lg overflow-hidden">
+              <div key={idx} className="border rounded-lg overflow-hidden shadow-sm">
                 {/* Reasoning Header */}
-                <div className="bg-blue-50 border-b border-blue-200 px-4 py-3">
-                  <div className="flex items-start gap-2 mb-2">
-                    <div className="flex-shrink-0 w-2 h-2 mt-1.5 bg-blue-500 rounded-full"></div>
-                    <p className="text-sm font-medium text-blue-900">{reasoning}</p>
+                <div className="bg-blue-50 border-b border-blue-200 px-6 py-4">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="flex-shrink-0 w-2 h-2 mt-2 bg-blue-500 rounded-full"></div>
+                    <div className="flex-1">
+                      <p className="text-base text-blue-900 leading-relaxed">{reasoning}</p>
+                    </div>
                   </div>
-                  <div className="text-xs text-blue-700 ml-4">
-                    <code className="bg-blue-100 px-2 py-0.5 rounded">
+                  <div className="text-xs text-blue-700 ml-5 flex items-center gap-2">
+                    <code className="bg-blue-100 px-2 py-1 rounded font-mono">
                       {commitSha.substring(0, 7)}
                     </code>
-                    {' '}
-                    {commitMessage.split('\n')[0]}
+                    <span className="text-blue-800">{commitMessage.split('\n')[0]}</span>
                   </div>
                 </div>
 
@@ -239,8 +240,8 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
                       .join('');
 
                     return (
-                      <div key={fileIdx} id={`file-${file.path.replace(/\//g, '-')}`}>
-                        <div className="bg-gray-50 px-4 py-2 font-mono text-sm border-b">
+                      <div key={fileIdx} id={`file-${file.path.replace(/\//g, '-')}`} className="bg-white">
+                        <div className="bg-gray-50 px-4 py-3 font-mono text-sm border-b border-gray-200">
                           {file.path}
                         </div>
                         <DiffViewer diff={diffContent} filename={file.path} />

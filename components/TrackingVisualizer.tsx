@@ -105,12 +105,14 @@ export default function TrackingVisualizer({
       {tracking && (
         <div className="space-y-6">
           {tracking.changes.map((change, changeIdx) => (
-            <div key={changeIdx} className="border rounded-lg overflow-hidden">
+            <div key={changeIdx} className="border rounded-lg overflow-hidden shadow-sm">
               {/* Reasoning Header - Main organizational unit */}
-              <div className="bg-blue-50 border-b border-blue-200 px-4 py-3">
-                <div className="flex items-start gap-2">
-                  <div className="flex-shrink-0 w-2 h-2 mt-1.5 bg-blue-500 rounded-full"></div>
-                  <p className="text-sm font-medium text-blue-900">{change.reasoning}</p>
+              <div className="bg-blue-50 border-b border-blue-200 px-6 py-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-2 h-2 mt-2 bg-blue-500 rounded-full"></div>
+                  <div className="flex-1">
+                    <p className="text-base text-blue-900 leading-relaxed">{change.reasoning}</p>
+                  </div>
                 </div>
               </div>
 
@@ -134,9 +136,9 @@ export default function TrackingVisualizer({
                     .join('');
 
                   return (
-                    <div key={fileIdx}>
+                    <div key={fileIdx} className="bg-white">
                       {/* File path header */}
-                      <div className="bg-gray-50 px-4 py-2 font-mono text-sm border-b">
+                      <div className="bg-gray-50 px-4 py-3 font-mono text-sm border-b border-gray-200">
                         {fileChange.path}
                       </div>
                       {/* Diff for this file's chunks */}
