@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "commit": "e5f8d84",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Create API endpoint to fetch full PR diff with tracking data aggregation. The /api/github/pr-diff route fetches the PR comparison between base and head, then aggregates tracking files from all commits in the PR. It maps each file's changes to their corresponding tracking annotations, grouping all explanations by file rather than by commit. This enables showing why each file was changed without requiring users to click through individual commits.",
+      "files": [
+        { "path": "app/api/github/pr-diff/route.ts", "hunks": [1] }
+      ]
+    },
+    {
+      "reasoning": "Build PRDiffViewer component for GitHub-style file review. Displays all files changed in the PR with a summary header, jump links for navigation, and tracking annotations above each file's diff. The tracking annotations show reasoning from all commits that touched that file, with commit references. This creates a familiar review experience where users see all changes to a file in one place, along with the full context of why those changes were made.",
+      "files": [
+        { "path": "components/PRDiffViewer.tsx", "hunks": [1] }
+      ]
+    },
+    {
+      "reasoning": "Add tabbed interface to main page for Files vs Commits views. The default 'Files Changed' tab shows the full PR diff grouped by file (using PRDiffViewer), while the 'Commits' tab shows the commit list for drilling into individual commits. This matches GitHub's PR interface and provides flexibility: start with the big picture (all files), then drill down to commits if needed. The tab state resets when navigating back to PR list.",
+      "files": [
+        { "path": "app/page.tsx", "hunks": [1, 2, 3, 4] }
+      ]
+    }
+  ]
+}
