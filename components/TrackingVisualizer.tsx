@@ -105,51 +105,44 @@ export default function TrackingVisualizer({
       {tracking && (
         <div className="space-y-6">
           {tracking.changes.map((change, changeIdx) => (
-            <div key={changeIdx} className="border rounded-lg overflow-hidden">
-              {/* Change Reasoning */}
-              <div className="bg-blue-50 border-b border-blue-200 p-4">
-                <h3 className="font-semibold text-blue-900 mb-2">
-                  Change {changeIdx + 1}
-                </h3>
-                <p className="text-blue-800">{change.reasoning}</p>
+            <div key={changeIdx} className="border rounded-lg overflow-hidden shadow-sm">
+              {/* Reasoning Header - Main organizational unit */}
+              <div className="bg-blue-50 border-b border-blue-200 px-6 py-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-2 h-2 mt-2 bg-blue-500 rounded-full"></div>
+                  <div className="flex-1">
+                    <p className="text-base text-blue-900 leading-relaxed">{change.reasoning}</p>
+                  </div>
+                </div>
               </div>
 
-              {/* Files and Hunks */}
-              <div className="divide-y">
+              {/* Files modified for this logical change */}
+              <div className="divide-y divide-gray-200">
                 {change.files.map((fileChange, fileIdx) => {
                   const fileDiff = commitInfo.files.find(
                     (f) => f.path === fileChange.path
                   );
 
+                  if (!fileDiff) return null;
+
+                  const selectedHunks = fileChange.hunks
+                    .map((hunkNum) => fileDiff.hunks[hunkNum - 1])
+                    .filter((h) => h != null);
+
+                  if (selectedHunks.length === 0) return null;
+
+                  const diffContent = selectedHunks
+                    .map((hunk) => hunk.header + '\n' + hunk.content)
+                    .join('');
+
                   return (
                     <div key={fileIdx} className="bg-white">
-                      <div className="bg-gray-50 px-4 py-2 font-mono text-sm border-b">
+                      {/* File path header */}
+                      <div className="bg-gray-50 px-4 py-3 font-mono text-sm border-b border-gray-200">
                         {fileChange.path}
                       </div>
-
-                      {fileDiff && (
-                        <div>
-                          {(() => {
-                            // Reconstruct diff for selected hunks
-                            const selectedHunks = fileChange.hunks
-                              .map((hunkNum) => fileDiff.hunks[hunkNum - 1])
-                              .filter((h) => h != null);
-
-                            if (selectedHunks.length === 0) return null;
-
-                            const diffContent = selectedHunks
-                              .map((hunk) => hunk.header + '\n' + hunk.content)
-                              .join('');
-
-                            return (
-                              <DiffViewer
-                                diff={diffContent}
-                                filename={fileChange.path}
-                              />
-                            );
-                          })()}
-                        </div>
-                      )}
+                      {/* Diff for this file's chunks */}
+                      <DiffViewer diff={diffContent} filename={fileChange.path} />
                     </div>
                   );
                 })}

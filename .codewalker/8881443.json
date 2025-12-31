@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "commit": "8881443",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Improve visual styling and spacing for reasoning headers in TrackingVisualizer. Increased padding from px-4 py-3 to px-6 py-4, made text larger (text-base), added better line height (leading-relaxed), increased gap between dot and text to gap-3, added shadow-sm to cards, and improved file header padding to py-3.",
+      "files": [
+        {
+          "path": "components/TrackingVisualizer.tsx",
+          "hunks": [1]
+        }
+      ]
+    },
+    {
+      "reasoning": "Apply matching styling improvements to PRDiffViewer for consistency. Added same padding, spacing, and typography improvements as TrackingVisualizer. Enhanced commit info display with better spacing (mb-3, gap-2) and improved code badge padding (py-1).",
+      "files": [
+        {
+          "path": "components/PRDiffViewer.tsx",
+          "hunks": [1]
+        }
+      ]
+    }
+  ]
+}

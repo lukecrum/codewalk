@@ -44,7 +44,7 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
   const [files, setFiles] = useState<FileWithTracking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filesExpanded, setFilesExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState<'changes' | 'files'>('changes');
 
   useEffect(() => {
     const fetchPRDiff = async () => {
@@ -119,59 +119,169 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
         )}
       </div>
 
-      {/* Files Changed Summary */}
+      {/* Tab Navigation */}
       <div className="bg-white border rounded-lg overflow-hidden">
-        <button
-          onClick={() => setFilesExpanded(!filesExpanded)}
-          className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-        >
-          <h2 className="font-semibold">
-            Files changed ({files.length})
-          </h2>
-          <span className={`text-gray-500 text-sm transition-transform ${filesExpanded ? 'rotate-180' : ''}`}>
-            ▼
-          </span>
-        </button>
-        {filesExpanded && (
-          <div className="border-t px-4 py-3 flex flex-col gap-2">
-            {files.map((file) => (
-              <a
-                key={file.path}
-                href={`#file-${file.path.replace(/\//g, '-')}`}
-                className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                {file.path}
-              </a>
-            ))}
-          </div>
-        )}
+        <div className="flex border-b">
+          <button
+            onClick={() => setActiveTab('changes')}
+            className={`flex-1 px-6 py-3 font-medium transition-colors ${
+              activeTab === 'changes'
+                ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-700'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            Changes
+          </button>
+          <button
+            onClick={() => setActiveTab('files')}
+            className={`flex-1 px-6 py-3 font-medium transition-colors ${
+              activeTab === 'files'
+                ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-700'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            Files Changed ({files.length})
+          </button>
+        </div>
       </div>
 
-      {/* File Diffs */}
+      {/* Changes Tab - Diffs grouped by reasoning/logical chunks */}
+      {activeTab === 'changes' && (
       <div className="space-y-6">
-        {files.map((file) => {
-          const diffContent = file.hunks
-            .map((hunk) => hunk.header + '\n' + hunk.content)
-            .join('');
+        {(() => {
+          // Group by reasoning
+          const reasoningGroups = new Map<
+            string,
+            Array<{
+              filePath: string;
+              commitSha: string;
+              commitMessage: string;
+              hunkNumbers: number[];
+            }>
+          >();
 
-          return (
-            <div
-              key={file.path}
-              id={`file-${file.path.replace(/\//g, '-')}`}
-            >
-              <DiffViewer
-                diff={diffContent}
-                filename={file.path}
-                tracking={file.tracking.length > 0 ? file.tracking : undefined}
-              />
-            </div>
-          );
-        })}
+          // Collect all reasoning -> file mappings
+          files.forEach((file) => {
+            file.tracking.forEach((track) => {
+              const key = `${track.reasoning}|${track.commitSha}`;
+              if (!reasoningGroups.has(key)) {
+                reasoningGroups.set(key, []);
+              }
+              reasoningGroups.get(key)!.push({
+                filePath: file.path,
+                commitSha: track.commitSha,
+                commitMessage: track.commitMessage,
+                hunkNumbers: track.hunkNumbers,
+              });
+            });
+          });
+
+          // If no tracking, fall back to file-based display
+          if (reasoningGroups.size === 0) {
+            return files.map((file) => {
+              const diffContent = file.hunks
+                .map((hunk) => hunk.header + '\n' + hunk.content)
+                .join('');
+
+              return (
+                <div
+                  key={file.path}
+                  id={`file-${file.path.replace(/\//g, '-')}`}
+                  className="border rounded-lg overflow-hidden"
+                >
+                  <div className="bg-gray-50 px-4 py-2 font-mono text-sm border-b">
+                    {file.path}
+                  </div>
+                  <DiffViewer diff={diffContent} filename={file.path} />
+                </div>
+              );
+            });
+          }
+
+          // Render by reasoning
+          return Array.from(reasoningGroups.entries()).map(([key, fileInfos], idx) => {
+            const reasoning = key.split('|')[0];
+            const commitSha = fileInfos[0].commitSha;
+            const commitMessage = fileInfos[0].commitMessage;
+
+            return (
+              <div key={idx} className="border rounded-lg overflow-hidden shadow-sm">
+                {/* Reasoning Header */}
+                <div className="bg-blue-50 border-b border-blue-200 px-6 py-4">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="flex-shrink-0 w-2 h-2 mt-2 bg-blue-500 rounded-full"></div>
+                    <div className="flex-1">
+                      <p className="text-base text-blue-900 leading-relaxed">{reasoning}</p>
+                    </div>
+                  </div>
+                  <div className="text-xs text-blue-700 ml-5 flex items-center gap-2">
+                    <code className="bg-blue-100 px-2 py-1 rounded font-mono">
+                      {commitSha.substring(0, 7)}
+                    </code>
+                    <span className="text-blue-800">{commitMessage.split('\n')[0]}</span>
+                  </div>
+                </div>
+
+                {/* Files for this reasoning */}
+                <div className="divide-y divide-gray-200">
+                  {fileInfos.map((fileInfo, fileIdx) => {
+                    const file = files.find((f) => f.path === fileInfo.filePath);
+                    if (!file) return null;
+
+                    const selectedHunks = fileInfo.hunkNumbers
+                      .map((hunkNum) => file.hunks[hunkNum - 1])
+                      .filter((h) => h != null);
+
+                    if (selectedHunks.length === 0) return null;
+
+                    const diffContent = selectedHunks
+                      .map((hunk) => hunk.header + '\n' + hunk.content)
+                      .join('');
+
+                    return (
+                      <div key={fileIdx} id={`file-${file.path.replace(/\//g, '-')}`} className="bg-white">
+                        <div className="bg-gray-50 px-4 py-3 font-mono text-sm border-b border-gray-200">
+                          {file.path}
+                        </div>
+                        <DiffViewer diff={diffContent} filename={file.path} />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          });
+        })()}
       </div>
+      )}
 
-      {files.length === 0 && (
-        <div className="bg-white border rounded-lg p-8 text-center text-gray-500">
-          No file changes in this pull request.
+      {/* Files Tab - Plain file-based view with full diffs */}
+      {activeTab === 'files' && (
+        <div className="space-y-6">
+          {files.length === 0 ? (
+            <div className="bg-white border rounded-lg p-8 text-center text-gray-500">
+              No file changes in this pull request.
+            </div>
+          ) : (
+            files.map((file) => {
+              const diffContent = file.hunks
+                .map((hunk) => hunk.header + '\n' + hunk.content)
+                .join('');
+
+              return (
+                <div
+                  key={file.path}
+                  id={`file-${file.path.replace(/\//g, '-')}`}
+                  className="border rounded-lg overflow-hidden shadow-sm"
+                >
+                  <div className="bg-gray-50 px-4 py-3 font-mono text-sm border-b border-gray-200">
+                    {file.path}
+                  </div>
+                  <DiffViewer diff={diffContent} filename={file.path} />
+                </div>
+              );
+            })
+          )}
         </div>
       )}
     </div>
