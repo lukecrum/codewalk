@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Brain } from 'lucide-react';
 import DiffViewer from './DiffViewer';
 
 type PRInfo = {
@@ -113,8 +114,8 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
         </div>
 
         {prInfo.body && (
-          <div className="mt-4 prose prose-sm max-w-none">
-            <div className="text-gray-700 whitespace-pre-wrap">{prInfo.body}</div>
+          <div className="mt-4 text-sm text-gray-700 whitespace-pre-wrap max-w-none">
+            {prInfo.body}
           </div>
         )}
       </div>
@@ -205,25 +206,18 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
             const commitMessage = fileInfos[0].commitMessage;
 
             return (
-              <div key={idx} className="border rounded-lg overflow-hidden shadow-sm">
+              <div key={idx} className="border border-blue-200 rounded-lg overflow-hidden shadow-sm mt-4">
                 {/* Reasoning Header */}
-                <div className="bg-blue-50 border-b border-blue-200 px-6 py-4">
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className="flex-shrink-0 w-2 h-2 mt-2 bg-blue-500 rounded-full"></div>
+                <div style={{ backgroundColor: '#dbeafe', paddingLeft: '1rem', paddingRight: '1rem', marginBottom: '1rem' }} className="py-4">
+                  <div className="flex items-start gap-3">
                     <div className="flex-1">
-                      <p className="text-base text-blue-900 leading-relaxed">{reasoning}</p>
+                      <p className="text-base text-blue-900 leading-relaxed font-medium">{reasoning}</p>
                     </div>
-                  </div>
-                  <div className="text-xs text-blue-700 ml-5 flex items-center gap-2">
-                    <code className="bg-blue-100 px-2 py-1 rounded font-mono">
-                      {commitSha.substring(0, 7)}
-                    </code>
-                    <span className="text-blue-800">{commitMessage.split('\n')[0]}</span>
                   </div>
                 </div>
 
-                {/* Files for this reasoning */}
-                <div className="divide-y divide-gray-200">
+                {/* Files for this reasoning - Indented */}
+                <div className="bg-white">
                   {fileInfos.map((fileInfo, fileIdx) => {
                     const file = files.find((f) => f.path === fileInfo.filePath);
                     if (!file) return null;
@@ -239,11 +233,8 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
                       .join('');
 
                     return (
-                      <div key={fileIdx} id={`file-${file.path.replace(/\//g, '-')}`} className="bg-white">
-                        <div className="bg-gray-50 px-4 py-3 font-mono text-sm border-b border-gray-200">
-                          {file.path}
-                        </div>
-                        <DiffViewer diff={diffContent} filename={file.path} />
+                      <div key={fileIdx} id={`file-${file.path.replace(/\//g, '-')}`} className="py-4">
+                        <DiffViewer diff={diffContent} filename={file.path} indent={true} />
                       </div>
                     );
                   })}

@@ -1,0 +1,72 @@
+{
+  "commit": "a6ae052",
+  "message": "Fix Tailwind v4 compatibility issues",
+  "changes": [
+    {
+      "reasoning": "Tailwind v4 removed the line-clamp utility classes. Replace with inline CSS using -webkit-box and WebkitLineClamp for multi-line text truncation in repository descriptions.",
+      "files": [
+        {
+          "path": "components/RepoSelector.tsx",
+          "hunks": [1]
+        }
+      ]
+    },
+    {
+      "reasoning": "Tailwind v4 prose utilities require the @tailwindcss/typography plugin which is not installed. Replace prose classes with standard Tailwind text styling utilities (text-sm, text-gray-700) to maintain consistent formatting for PR descriptions.",
+      "files": [
+        {
+          "path": "components/PRDiffViewer.tsx",
+          "hunks": [1]
+        }
+      ]
+    },
+    {
+      "reasoning": "Add indent prop to DiffViewer component to support indented diff display in grouped reasoning sections. This allows diffs to be visually nested under their reasoning headers.",
+      "files": [
+        {
+          "path": "components/DiffViewer.tsx",
+          "hunks": [1, 2]
+        }
+      ]
+    },
+    {
+      "reasoning": "Improve visual hierarchy and styling of reasoning-grouped diffs: use inline backgroundColor for consistency, remove redundant file path headers when indented, add border-blue-200 for visual distinction, and simplify the reasoning header layout by removing commit info badges and decorative bullets.",
+      "files": [
+        {
+          "path": "components/PRDiffViewer.tsx",
+          "hunks": [2, 3, 4]
+        },
+        {
+          "path": "components/TrackingVisualizer.tsx",
+          "hunks": [1, 2]
+        }
+      ]
+    },
+    {
+      "reasoning": "Add lucide-react dependency to package.json for icon components (Brain icon) used in the UI.",
+      "files": [
+        {
+          "path": "package.json",
+          "hunks": [1]
+        },
+        {
+          "path": "package-lock.json",
+          "hunks": [1, 2]
+        }
+      ]
+    },
+    {
+      "reasoning": "Import Brain icon from lucide-react in components that display reasoning sections (though not yet used in the rendered output).",
+      "files": [
+        {
+          "path": "components/PRDiffViewer.tsx",
+          "hunks": [5]
+        },
+        {
+          "path": "components/TrackingVisualizer.tsx",
+          "hunks": [3]
+        }
+      ]
+    }
+  ]
+}
