@@ -1,9 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Brain } from 'lucide-react';
-import { Changeset, CommitInfo, ParsedHunk } from '@/types/codewalker';
+import { Lightbulb, User, GitCommit, AlertTriangle, File } from 'lucide-react';
+import { Changeset, CommitInfo } from '@/types/codewalker';
 import DiffViewer from './DiffViewer';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
 
 type TrackingVisualizerProps = {
   owner: string;
@@ -16,7 +20,7 @@ type TrackingVisualizerProps = {
 export default function TrackingVisualizer({
   owner,
   repo,
-  ref,
+  ref: branchRef,
   commitSha,
   token,
 }: TrackingVisualizerProps) {
@@ -36,7 +40,7 @@ export default function TrackingVisualizer({
 
         // Fetch tracking file
         const trackingParams = new URLSearchParams(params);
-        trackingParams.append('ref', ref);
+        trackingParams.append('ref', branchRef);
         trackingParams.append('commit_hash', commitSha.substring(0, 7));
 
         const trackingResponse = await fetch(`/api/github/tracking?${trackingParams}`);
@@ -60,64 +64,109 @@ export default function TrackingVisualizer({
 
         setTracking(trackingData);
         setCommitInfo(commitData.commit);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [owner, repo, ref, commitSha, token]);
+  }, [owner, repo, branchRef, commitSha, token]);
 
   if (loading) {
-    return <div className="text-gray-600">Loading tracking data...</div>;
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-20 w-full" />
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="text-red-600">Error: {error}</div>;
+    return (
+      <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 text-center">
+        <p className="text-destructive font-medium">Failed to load commit data</p>
+        <p className="text-destructive/80 text-sm mt-1">{error}</p>
+      </div>
+    );
   }
 
   if (!commitInfo) {
-    return <div className="text-gray-600">No commit data available.</div>;
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        No commit data available
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
       {/* Commit Header */}
-      <div className="border-b pb-4">
-        <div className="flex items-center gap-2 mb-2">
-          <code className="px-2 py-1 bg-gray-100 rounded text-sm font-mono">
-            {commitInfo.shortSha}
-          </code>
-          <span className="text-sm text-gray-500">by {commitInfo.author}</span>
+      <div className="flex items-start gap-4 pb-4 border-b">
+        <div className="p-2 rounded-lg bg-muted">
+          <GitCommit className="h-5 w-5 text-muted-foreground" />
         </div>
-        <div className="text-lg font-medium">{commitInfo.message}</div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center flex-wrap gap-2 mb-2">
+            <Badge variant="outline" className="font-mono text-xs">
+              {commitInfo.shortSha}
+            </Badge>
+            <span className="flex items-center gap-1 text-sm text-muted-foreground">
+              <User className="h-3.5 w-3.5" />
+              {commitInfo.author}
+            </span>
+          </div>
+          <p className="font-medium leading-snug">{commitInfo.message}</p>
+        </div>
       </div>
 
+      {/* No Tracking Warning */}
       {!tracking && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-yellow-800">
-            No tracking file found for this commit. The commit changes are shown below.
-          </p>
-        </div>
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="pt-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-amber-800">No tracking file found</p>
+                <p className="text-sm text-amber-700 mt-1">
+                  This commit doesn&apos;t have a CodeWalker tracking file. All changes are shown below without reasoning context.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
+      {/* Tracked Changes */}
       {tracking && (
-        <div className="space-y-6">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Lightbulb className="h-4 w-4" />
+            <span>{tracking.changes.length} logical {tracking.changes.length === 1 ? 'change' : 'changes'}</span>
+          </div>
+
           {tracking.changes.map((change, changeIdx) => (
-            <div key={changeIdx} className="border border-blue-200 rounded-lg overflow-hidden shadow-sm">
-              {/* Reasoning Header - Main organizational unit */}
-              <div style={{ backgroundColor: '#dbeafe' }} className="px-6 py-4">
+            <Card key={changeIdx} className="overflow-hidden border-l-4 border-l-primary/40">
+              {/* Reasoning Header */}
+              <CardHeader className="bg-primary/5 pb-3">
                 <div className="flex items-start gap-3">
+                  <div className="p-1.5 rounded bg-primary/10 mt-0.5">
+                    <Lightbulb className="h-4 w-4 text-primary" />
+                  </div>
                   <div className="flex-1">
-                    <p className="text-base text-blue-900 leading-relaxed font-medium">{change.reasoning}</p>
+                    <p className="text-sm font-medium leading-relaxed">{change.reasoning}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {change.files.length} {change.files.length === 1 ? 'file' : 'files'} affected
+                    </p>
                   </div>
                 </div>
-              </div>
+              </CardHeader>
 
-              {/* Files modified for this logical change */}
-              <div className="divide-y divide-gray-200">
+              {/* Files modified */}
+              <CardContent className="p-0">
                 {change.files.map((fileChange, fileIdx) => {
                   const fileDiff = commitInfo.files.find(
                     (f) => f.path === fileChange.path
@@ -136,38 +185,43 @@ export default function TrackingVisualizer({
                     .join('');
 
                   return (
-                    <div key={fileIdx} className="bg-white">
-                      {/* File path header */}
-                      <div className="bg-gray-50 px-4 py-3 font-mono text-sm border-b border-gray-200">
-                        {fileChange.path}
+                    <div key={fileIdx}>
+                      {fileIdx > 0 && <Separator />}
+                      <div className="file-path-header">
+                        <File className="h-4 w-4 file-icon" />
+                        <span className="truncate">{fileChange.path}</span>
                       </div>
-                      {/* Diff for this file's chunks */}
                       <DiffViewer diff={diffContent} filename={fileChange.path} />
                     </div>
                   );
                 })}
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
 
-      {/* Show all diffs if no tracking file */}
+      {/* Fallback: Show all diffs if no tracking */}
       {!tracking && commitInfo.files.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">All Changes</h3>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <File className="h-4 w-4" />
+            <span>{commitInfo.files.length} {commitInfo.files.length === 1 ? 'file' : 'files'} changed</span>
+          </div>
+
           {commitInfo.files.map((fileDiff, fileIdx) => {
             const diffContent = fileDiff.hunks
               .map((hunk) => hunk.header + '\n' + hunk.content)
               .join('');
 
             return (
-              <div key={fileIdx} className="border rounded-lg overflow-hidden">
-                <div className="bg-gray-50 px-4 py-2 font-mono text-sm border-b">
-                  {fileDiff.path}
+              <Card key={fileIdx} className="overflow-hidden">
+                <div className="file-path-header">
+                  <File className="h-4 w-4 file-icon" />
+                  <span className="truncate">{fileDiff.path}</span>
                 </div>
                 <DiffViewer diff={diffContent} filename={fileDiff.path} />
-              </div>
+              </Card>
             );
           })}
         </div>
