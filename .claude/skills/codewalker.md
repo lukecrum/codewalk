@@ -72,7 +72,7 @@ If it's a distinct new task, create a new commit and new tracking file.
 
 1. Before committing, check if a git repo exists with `git status`. Only run `git init` if there isn't one.
 2. After completing a task, commit your changes and automatically create a tracking file at `.codewalker/<commit-hash>.json`
-3. Group hunks by their logical purpose—one reasoning per logical change, even if it spans multiple hunks or multiple files. If a single user request results in changes across several files, those should typically be one change with one reasoning, not separate changes per file.
+3. Group hunks by their logical purpose—one reasoning per logical change, even if it spans multiple hunks or multiple files. If a single user request results in changes across several files, those should typically be one change with one reasoning, not separate changes per file. Ensure that you include EVERY hunk and file change that was made and is relevant to the logical change. Do NOT leave anything out, no matter how trivial.
 4. Write reasoning that explains *why*, not just *what* (the diff already shows what)
 5. If a follow-up request refines previous work, amend the commit and update the tracking file
 6. If a follow-up request is a new task, create a new commit and new tracking file
