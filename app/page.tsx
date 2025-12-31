@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import RepoSelector from '@/components/RepoSelector';
 import PRSelector from '@/components/PRSelector';
+import PRDiffViewer from '@/components/PRDiffViewer';
 import CommitList from '@/components/CommitList';
 import TrackingVisualizer from '@/components/TrackingVisualizer';
 
@@ -38,6 +39,7 @@ export default function Home() {
   const [manualEntry, setManualEntry] = useState(false);
   const [selectedPR, setSelectedPR] = useState<PR | null>(null);
   const [selectedCommit, setSelectedCommit] = useState<Commit | null>(null);
+  const [activeTab, setActiveTab] = useState<'files' | 'commits'>('files');
 
   const handleSelectRepo = (repoOwner: string, repoName: string) => {
     setOwner(repoOwner);
@@ -55,6 +57,7 @@ export default function Home() {
   const handleBackToPRs = () => {
     setSelectedPR(null);
     setSelectedCommit(null);
+    setActiveTab('files');
   };
 
   const handleBackToCommits = () => {
@@ -191,24 +194,54 @@ export default function Home() {
             >
               ← Back to pull requests
             </button>
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
-              <h2 className="text-xl font-bold mb-2">
-                PR #{selectedPR.number}: {selectedPR.title}
-              </h2>
-              <p className="text-sm text-gray-600">
-                {selectedPR.user.login} wants to merge {selectedPR.head.ref} into{' '}
-                {selectedPR.base.ref}
-              </p>
+
+            {/* Tabs */}
+            <div className="bg-white border-b mb-6">
+              <div className="flex gap-4 px-6">
+                <button
+                  onClick={() => setActiveTab('files')}
+                  className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    activeTab === 'files'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Files Changed
+                </button>
+                <button
+                  onClick={() => setActiveTab('commits')}
+                  className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    activeTab === 'commits'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Commits
+                </button>
+              </div>
             </div>
-            <div className="bg-white rounded-lg shadow p-6">
-              <CommitList
+
+            {/* Tab Content */}
+            {activeTab === 'files' && (
+              <PRDiffViewer
                 owner={owner}
                 repo={repo}
                 prNumber={selectedPR.number}
                 token={token}
-                onSelectCommit={setSelectedCommit}
               />
-            </div>
+            )}
+
+            {activeTab === 'commits' && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <CommitList
+                  owner={owner}
+                  repo={repo}
+                  prNumber={selectedPR.number}
+                  token={token}
+                  onSelectCommit={setSelectedCommit}
+                />
+              </div>
+            )}
           </div>
         )}
 
