@@ -70,12 +70,13 @@ If it's a distinct new task, create a new commit and new tracking file.
 
 ## Instructions
 
-1. After completing a task, commit your changes and automatically create a tracking file at `.codewalker/<commit-hash>.json`
-2. Group hunks by their logical purpose—one reasoning per logical change, even if it spans multiple hunks or files
-3. Write reasoning that explains *why*, not just *what* (the diff already shows what)
-4. If a follow-up request refines previous work, amend the commit and update the tracking file
-5. If a follow-up request is a new task, create a new commit and new tracking file
-6. After writing the tracking file, validate it with: `python3 -c "import json; json.load(open('.codewalker/<commit-hash>.json'))"`
+1. Before committing, check if a git repo exists with `git status`. Only run `git init` if there isn't one.
+2. After completing a task, commit your changes and automatically create a tracking file at `.codewalker/<commit-hash>.json`
+3. Group hunks by their logical purpose—one reasoning per logical change, even if it spans multiple hunks or files
+4. Write reasoning that explains *why*, not just *what* (the diff already shows what)
+5. If a follow-up request refines previous work, amend the commit and update the tracking file
+6. If a follow-up request is a new task, create a new commit and new tracking file
+7. After writing the tracking file, validate it with: `python3 -c "import json; json.load(open('.codewalker/<commit-hash>.json'))"`
 
 Do not wait for the user to ask for the tracking file—create it automatically as part of finishing each task.
 
