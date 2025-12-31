@@ -46,13 +46,13 @@ export function parseHunks(diff: string, filePath: string): ParsedHunk[] {
     if (currentHunk) {
       currentHunk.content += line + '\n';
 
-      if (line.startsWith('+')) {
+      if (line.startsWith('+') && !line.startsWith('+++')) {
         currentHunk.lines.push({
           type: 'add',
           content: line.slice(1),
           newLineNum: newLineNum++,
         });
-      } else if (line.startsWith('-')) {
+      } else if (line.startsWith('-') && !line.startsWith('---')) {
         currentHunk.lines.push({
           type: 'remove',
           content: line.slice(1),
@@ -65,7 +65,16 @@ export function parseHunks(diff: string, filePath: string): ParsedHunk[] {
           oldLineNum: oldLineNum++,
           newLineNum: newLineNum++,
         });
+      } else if (line === '') {
+        // Handle empty lines as context
+        currentHunk.lines.push({
+          type: 'context',
+          content: '',
+          oldLineNum: oldLineNum++,
+          newLineNum: newLineNum++,
+        });
       }
+      // Ignore other lines (like "\ No newline at end of file")
     }
   }
 
@@ -115,7 +124,17 @@ export async function getCommitInfo(
     ref: sha,
   });
 
-  const files = parseCommitDiff(commit.files?.map(f => f.patch || '').join('\n\n') || '');
+  // Parse each file's patch individually
+  const files: FileDiff[] = [];
+  for (const file of commit.files || []) {
+    if (!file.patch) continue;
+
+    const hunks = parseHunks(file.patch, file.filename);
+    files.push({
+      path: file.filename,
+      hunks,
+    });
+  }
 
   return {
     sha: commit.sha,
