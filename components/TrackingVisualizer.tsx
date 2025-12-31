@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Changeset, CommitInfo, ParsedHunk } from '@/types/codewalker';
+import DiffViewer from './DiffViewer';
 
 type TrackingVisualizerProps = {
   owner: string;
@@ -127,44 +128,26 @@ export default function TrackingVisualizer({
                       </div>
 
                       {fileDiff && (
-                        <div className="divide-y">
-                          {fileChange.hunks.map((hunkNum) => {
-                            const hunk = fileDiff.hunks[hunkNum - 1];
-                            if (!hunk) return null;
+                        <div>
+                          {(() => {
+                            // Reconstruct diff for selected hunks
+                            const selectedHunks = fileChange.hunks
+                              .map((hunkNum) => fileDiff.hunks[hunkNum - 1])
+                              .filter((h) => h != null);
+
+                            if (selectedHunks.length === 0) return null;
+
+                            const diffContent = selectedHunks
+                              .map((hunk) => hunk.header + '\n' + hunk.content)
+                              .join('');
 
                             return (
-                              <div key={hunkNum} className="p-4">
-                                <div className="font-mono text-xs text-gray-500 mb-2">
-                                  {hunk.header}
-                                </div>
-                                <div className="font-mono text-sm overflow-x-auto">
-                                  {hunk.lines.map((line, lineIdx) => (
-                                    <div
-                                      key={lineIdx}
-                                      className={`
-                                        ${line.type === 'add' ? 'bg-green-50 text-green-900' : ''}
-                                        ${line.type === 'remove' ? 'bg-red-50 text-red-900' : ''}
-                                        ${line.type === 'context' ? 'text-gray-700' : ''}
-                                        px-2 py-0.5
-                                      `}
-                                    >
-                                      <span className="select-none text-gray-400 mr-4 inline-block w-12 text-right">
-                                        {line.type === 'remove' && line.oldLineNum}
-                                        {line.type === 'add' && line.newLineNum}
-                                        {line.type === 'context' && line.newLineNum}
-                                      </span>
-                                      <span className="select-none mr-2">
-                                        {line.type === 'add' && '+'}
-                                        {line.type === 'remove' && '-'}
-                                        {line.type === 'context' && ' '}
-                                      </span>
-                                      <span>{line.content}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
+                              <DiffViewer
+                                diff={diffContent}
+                                filename={fileChange.path}
+                              />
                             );
-                          })}
+                          })()}
                         </div>
                       )}
                     </div>
@@ -180,47 +163,20 @@ export default function TrackingVisualizer({
       {!tracking && commitInfo.files.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">All Changes</h3>
-          {commitInfo.files.map((fileDiff, fileIdx) => (
-            <div key={fileIdx} className="border rounded-lg overflow-hidden">
-              <div className="bg-gray-50 px-4 py-2 font-mono text-sm border-b">
-                {fileDiff.path}
+          {commitInfo.files.map((fileDiff, fileIdx) => {
+            const diffContent = fileDiff.hunks
+              .map((hunk) => hunk.header + '\n' + hunk.content)
+              .join('');
+
+            return (
+              <div key={fileIdx} className="border rounded-lg overflow-hidden">
+                <div className="bg-gray-50 px-4 py-2 font-mono text-sm border-b">
+                  {fileDiff.path}
+                </div>
+                <DiffViewer diff={diffContent} filename={fileDiff.path} />
               </div>
-              <div className="divide-y">
-                {fileDiff.hunks.map((hunk, hunkIdx) => (
-                  <div key={hunkIdx} className="p-4">
-                    <div className="font-mono text-xs text-gray-500 mb-2">
-                      {hunk.header}
-                    </div>
-                    <div className="font-mono text-sm overflow-x-auto">
-                      {hunk.lines.map((line, lineIdx) => (
-                        <div
-                          key={lineIdx}
-                          className={`
-                            ${line.type === 'add' ? 'bg-green-50 text-green-900' : ''}
-                            ${line.type === 'remove' ? 'bg-red-50 text-red-900' : ''}
-                            ${line.type === 'context' ? 'text-gray-700' : ''}
-                            px-2 py-0.5
-                          `}
-                        >
-                          <span className="select-none text-gray-400 mr-4 inline-block w-12 text-right">
-                            {line.type === 'remove' && line.oldLineNum}
-                            {line.type === 'add' && line.newLineNum}
-                            {line.type === 'context' && line.newLineNum}
-                          </span>
-                          <span className="select-none mr-2">
-                            {line.type === 'add' && '+'}
-                            {line.type === 'remove' && '-'}
-                            {line.type === 'context' && ' '}
-                          </span>
-                          <span>{line.content}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
