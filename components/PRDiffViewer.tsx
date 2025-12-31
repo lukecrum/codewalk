@@ -158,40 +158,12 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
             <div
               key={file.path}
               id={`file-${file.path.replace(/\//g, '-')}`}
-              className="bg-white border rounded-lg overflow-hidden"
             >
-              {/* File Header */}
-              <div className="bg-gray-50 border-b px-4 py-3">
-                <div className="font-mono text-sm font-semibold">{file.path}</div>
-              </div>
-
-              {/* Tracking Annotations */}
-              {file.tracking.length > 0 && (
-                <div className="border-b bg-blue-50">
-                  {file.tracking.map((track, idx) => (
-                    <div key={idx} className="px-4 py-3 border-b last:border-b-0">
-                      <div className="flex items-start gap-2">
-                        <div className="flex-shrink-0 w-2 h-2 mt-1.5 bg-blue-500 rounded-full" />
-                        <div className="flex-1">
-                          <div className="text-sm font-medium text-blue-900 mb-1">
-                            {track.reasoning}
-                          </div>
-                          <div className="text-xs text-blue-700">
-                            <code className="bg-blue-100 px-1.5 py-0.5 rounded">
-                              {track.commitSha.substring(0, 7)}
-                            </code>
-                            {' '}
-                            {track.commitMessage.split('\n')[0]}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Diff Viewer */}
-              <DiffViewer diff={diffContent} filename={file.path} />
+              <DiffViewer
+                diff={diffContent}
+                filename={file.path}
+                tracking={file.tracking.length > 0 ? file.tracking : undefined}
+              />
             </div>
           );
         })}
