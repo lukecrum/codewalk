@@ -75,7 +75,7 @@ export default function Home() {
       <div className="min-h-screen bg-background flex flex-col">
         {/* Header */}
         <header className="border-b bg-card">
-          <div className="max-w-5xl mx-auto px-6 py-4">
+          <div className="max-w-7xl mx-auto px-6 py-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-primary/10">
                 <GitBranch className="h-5 w-5 text-primary" />
@@ -90,7 +90,7 @@ export default function Home() {
 
         {/* Main Content */}
         <main className="flex-1 flex items-center justify-center p-6">
-          <Card className="w-full max-w-2xl">
+          <Card className="w-full max-w-3xl">
             <CardHeader className="text-center pb-2">
               <CardTitle className="text-2xl">Welcome to CodeWalker</CardTitle>
               <CardDescription className="text-base">
@@ -178,7 +178,7 @@ export default function Home() {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="border-b bg-card sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-3">
+        <div className="max-w-[1400px] mx-auto px-6 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
@@ -241,7 +241,7 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="max-w-[1400px] mx-auto px-6 py-6">
           {/* PR List */}
           {!selectedPR && (
             <div className="animate-fade-in">
