@@ -44,6 +44,7 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
   const [files, setFiles] = useState<FileWithTracking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filesExpanded, setFilesExpanded] = useState(false);
 
   useEffect(() => {
     const fetchPRDiff = async () => {
@@ -119,21 +120,31 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
       </div>
 
       {/* Files Changed Summary */}
-      <div className="bg-white border rounded-lg p-4">
-        <h2 className="font-semibold mb-2">
-          Files changed ({files.length})
-        </h2>
-        <div className="flex flex-col gap-2">
-          {files.map((file) => (
-            <a
-              key={file.path}
-              href={`#file-${file.path.replace(/\//g, '-')}`}
-              className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
-            >
-              {file.path}
-            </a>
-          ))}
-        </div>
+      <div className="bg-white border rounded-lg overflow-hidden">
+        <button
+          onClick={() => setFilesExpanded(!filesExpanded)}
+          className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+        >
+          <h2 className="font-semibold">
+            Files changed ({files.length})
+          </h2>
+          <span className={`text-gray-500 text-sm transition-transform ${filesExpanded ? 'rotate-180' : ''}`}>
+            ▼
+          </span>
+        </button>
+        {filesExpanded && (
+          <div className="border-t px-4 py-3 flex flex-col gap-2">
+            {files.map((file) => (
+              <a
+                key={file.path}
+                href={`#file-${file.path.replace(/\//g, '-')}`}
+                className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                {file.path}
+              </a>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* File Diffs */}
@@ -147,40 +158,12 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
             <div
               key={file.path}
               id={`file-${file.path.replace(/\//g, '-')}`}
-              className="bg-white border rounded-lg overflow-hidden"
             >
-              {/* File Header */}
-              <div className="bg-gray-50 border-b px-4 py-3">
-                <div className="font-mono text-sm font-semibold">{file.path}</div>
-              </div>
-
-              {/* Tracking Annotations */}
-              {file.tracking.length > 0 && (
-                <div className="border-b bg-blue-50">
-                  {file.tracking.map((track, idx) => (
-                    <div key={idx} className="px-4 py-3 border-b last:border-b-0">
-                      <div className="flex items-start gap-2">
-                        <div className="flex-shrink-0 w-2 h-2 mt-1.5 bg-blue-500 rounded-full" />
-                        <div className="flex-1">
-                          <div className="text-sm font-medium text-blue-900 mb-1">
-                            {track.reasoning}
-                          </div>
-                          <div className="text-xs text-blue-700">
-                            <code className="bg-blue-100 px-1.5 py-0.5 rounded">
-                              {track.commitSha.substring(0, 7)}
-                            </code>
-                            {' '}
-                            {track.commitMessage.split('\n')[0]}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Diff Viewer */}
-              <DiffViewer diff={diffContent} filename={file.path} />
+              <DiffViewer
+                diff={diffContent}
+                filename={file.path}
+                tracking={file.tracking.length > 0 ? file.tracking : undefined}
+              />
             </div>
           );
         })}
