@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "commit": "2c4e86e",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Fix getCommitInfo to parse individual file patches instead of combining them. The GitHub API returns each file with its own patch string, but the code was trying to join them and parse as a combined git diff. This caused the diff parser to fail because it expected 'diff --git' headers that weren't present. Now each file's patch is parsed separately, which matches the actual API response format.",
+      "files": [
+        { "path": "lib/github.ts", "hunks": [1] }
+      ]
+    },
+    {
+      "reasoning": "Improve parseHunks to handle edge cases in diff format. Added filtering to ignore file markers (--- and +++) that start hunks but aren't actual diff lines, handle empty lines as context, and skip special git markers like '\\\ No newline at end of file'. This makes the parser more robust against real-world diff variations.",
+      "files": [
+        { "path": "lib/github.ts", "hunks": [2] }
+      ]
+    }
+  ]
+}
