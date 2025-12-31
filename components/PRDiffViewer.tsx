@@ -57,6 +57,8 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'changes' | 'files'>('changes');
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
+  const [expandedReasoningGroups, setExpandedReasoningGroups] = useState<Set<string>>(new Set());
+  const [expandedReasoningFiles, setExpandedReasoningFiles] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchPRDiff = async () => {
@@ -82,6 +84,21 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
         setFiles(data.files);
         // Expand all files by default
         setExpandedFiles(new Set(data.files.map((f: FileWithTracking) => f.path)));
+
+        // Build reasoning group keys and file keys for expansion
+        const reasoningKeys: string[] = [];
+        const reasoningFileKeys: string[] = [];
+        data.files.forEach((file: FileWithTracking) => {
+          file.tracking.forEach((track: FileWithTracking['tracking'][0]) => {
+            const groupKey = `${track.reasoning}|${track.commitSha}`;
+            if (!reasoningKeys.includes(groupKey)) {
+              reasoningKeys.push(groupKey);
+            }
+            reasoningFileKeys.push(`${groupKey}|${file.path}`);
+          });
+        });
+        setExpandedReasoningGroups(new Set(reasoningKeys));
+        setExpandedReasoningFiles(new Set(reasoningFileKeys));
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : 'An error occurred';
         setError(errorMessage);
@@ -100,6 +117,30 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
         next.delete(path);
       } else {
         next.add(path);
+      }
+      return next;
+    });
+  };
+
+  const toggleReasoningGroup = (key: string) => {
+    setExpandedReasoningGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const toggleReasoningFile = (key: string) => {
+    setExpandedReasoningFiles(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
       }
       return next;
     });
@@ -244,49 +285,77 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
           ) : (
             Array.from(reasoningGroups.entries()).map(([key, fileInfos], idx) => {
               const reasoning = key.split('|')[0];
+              const isGroupExpanded = expandedReasoningGroups.has(key);
 
               return (
                 <Card key={idx} className="overflow-hidden border-l-4 border-l-primary/40">
                   {/* Reasoning Header */}
-                  <CardHeader className="bg-primary/5 pb-3">
-                    <div className="flex items-start gap-3">
-                      <div className="p-1.5 rounded bg-primary/10 mt-0.5">
-                        <Lightbulb className="h-4 w-4 text-primary" />
+                  <button
+                    onClick={() => toggleReasoningGroup(key)}
+                    className="w-full text-left"
+                  >
+                    <CardHeader className="bg-primary/5 pb-3 hover:bg-primary/10 transition-colors">
+                      <div className="flex items-start gap-3">
+                        {isGroupExpanded ? (
+                          <ChevronDown className="h-4 w-4 text-primary mt-1 shrink-0" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-primary mt-1 shrink-0" />
+                        )}
+                        <div className="p-1.5 rounded bg-primary/10 mt-0.5">
+                          <Lightbulb className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium leading-relaxed">{reasoning}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {fileInfos.length} {fileInfos.length === 1 ? 'file' : 'files'} affected
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium leading-relaxed">{reasoning}</p>
-                      </div>
-                    </div>
-                  </CardHeader>
+                    </CardHeader>
+                  </button>
 
                   {/* Files for this reasoning */}
-                  <CardContent className="p-0">
-                    {fileInfos.map((fileInfo, fileIdx) => {
-                      const file = files.find((f) => f.path === fileInfo.filePath);
-                      if (!file) return null;
+                  {isGroupExpanded && (
+                    <CardContent className="p-0">
+                      {fileInfos.map((fileInfo, fileIdx) => {
+                        const file = files.find((f) => f.path === fileInfo.filePath);
+                        if (!file) return null;
 
-                      const selectedHunks = fileInfo.hunkNumbers
-                        .map((hunkNum) => file.hunks[hunkNum - 1])
-                        .filter((h) => h != null);
+                        const selectedHunks = fileInfo.hunkNumbers
+                          .map((hunkNum) => file.hunks[hunkNum - 1])
+                          .filter((h) => h != null);
 
-                      if (selectedHunks.length === 0) return null;
+                        if (selectedHunks.length === 0) return null;
 
-                      const diffContent = selectedHunks
-                        .map((hunk) => hunk.header + '\n' + hunk.content)
-                        .join('');
+                        const diffContent = selectedHunks
+                          .map((hunk) => hunk.header + '\n' + hunk.content)
+                          .join('');
 
-                      return (
-                        <div key={fileIdx}>
-                          {fileIdx > 0 && <Separator />}
-                          <div className="file-path-header">
-                            <File className="h-4 w-4 file-icon" />
-                            <span className="truncate">{file.path}</span>
+                        const fileKey = `${key}|${file.path}`;
+                        const isFileExpanded = expandedReasoningFiles.has(fileKey);
+
+                        return (
+                          <div key={fileIdx}>
+                            {fileIdx > 0 && <Separator />}
+                            <button
+                              onClick={() => toggleReasoningFile(fileKey)}
+                              className="w-full file-path-header hover:bg-muted/70 transition-colors"
+                            >
+                              {isFileExpanded ? (
+                                <ChevronDown className="h-4 w-4 file-icon shrink-0" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4 file-icon shrink-0" />
+                              )}
+                              <span className="truncate flex-1 text-left">{file.path}</span>
+                            </button>
+                            {isFileExpanded && (
+                              <DiffViewer diff={diffContent} filename={file.path} />
+                            )}
                           </div>
-                          <DiffViewer diff={diffContent} filename={file.path} />
-                        </div>
-                      );
-                    })}
-                  </CardContent>
+                        );
+                      })}
+                    </CardContent>
+                  )}
                 </Card>
               );
             })

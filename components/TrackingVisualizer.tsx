@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Lightbulb, User, GitCommit, AlertTriangle, File } from 'lucide-react';
+import { Lightbulb, User, GitCommit, AlertTriangle, File, ChevronDown, ChevronRight } from 'lucide-react';
 import { Changeset, CommitInfo } from '@/types/codewalker';
 import DiffViewer from './DiffViewer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +28,8 @@ export default function TrackingVisualizer({
   const [commitInfo, setCommitInfo] = useState<CommitInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
+  const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,6 +66,21 @@ export default function TrackingVisualizer({
 
         setTracking(trackingData);
         setCommitInfo(commitData.commit);
+
+        // Initialize all groups and files as expanded
+        if (trackingData) {
+          setExpandedGroups(new Set(trackingData.changes.map((_: unknown, idx: number) => idx)));
+          const fileKeys: string[] = [];
+          trackingData.changes.forEach((change: { files: Array<{ path: string }> }, changeIdx: number) => {
+            change.files.forEach((file: { path: string }) => {
+              fileKeys.push(`${changeIdx}|${file.path}`);
+            });
+          });
+          setExpandedFiles(new Set(fileKeys));
+        } else if (commitData.commit?.files) {
+          // For fallback view, expand all files
+          setExpandedFiles(new Set(commitData.commit.files.map((f: { path: string }) => f.path)));
+        }
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : 'An error occurred';
         setError(errorMessage);
@@ -74,6 +91,30 @@ export default function TrackingVisualizer({
 
     fetchData();
   }, [owner, repo, branchRef, commitSha, token]);
+
+  const toggleGroup = (idx: number) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(idx)) {
+        next.delete(idx);
+      } else {
+        next.add(idx);
+      }
+      return next;
+    });
+  };
+
+  const toggleFile = (key: string) => {
+    setExpandedFiles(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
 
   if (loading) {
     return (
@@ -148,56 +189,84 @@ export default function TrackingVisualizer({
             <span>{tracking.changes.length} logical {tracking.changes.length === 1 ? 'change' : 'changes'}</span>
           </div>
 
-          {tracking.changes.map((change, changeIdx) => (
-            <Card key={changeIdx} className="overflow-hidden border-l-4 border-l-primary/40">
-              {/* Reasoning Header */}
-              <CardHeader className="bg-primary/5 pb-3">
-                <div className="flex items-start gap-3">
-                  <div className="p-1.5 rounded bg-primary/10 mt-0.5">
-                    <Lightbulb className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium leading-relaxed">{change.reasoning}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {change.files.length} {change.files.length === 1 ? 'file' : 'files'} affected
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
+          {tracking.changes.map((change, changeIdx) => {
+            const isGroupExpanded = expandedGroups.has(changeIdx);
 
-              {/* Files modified */}
-              <CardContent className="p-0">
-                {change.files.map((fileChange, fileIdx) => {
-                  const fileDiff = commitInfo.files.find(
-                    (f) => f.path === fileChange.path
-                  );
-
-                  if (!fileDiff) return null;
-
-                  const selectedHunks = fileChange.hunks
-                    .map((hunkNum) => fileDiff.hunks[hunkNum - 1])
-                    .filter((h) => h != null);
-
-                  if (selectedHunks.length === 0) return null;
-
-                  const diffContent = selectedHunks
-                    .map((hunk) => hunk.header + '\n' + hunk.content)
-                    .join('');
-
-                  return (
-                    <div key={fileIdx}>
-                      {fileIdx > 0 && <Separator />}
-                      <div className="file-path-header">
-                        <File className="h-4 w-4 file-icon" />
-                        <span className="truncate">{fileChange.path}</span>
+            return (
+              <Card key={changeIdx} className="overflow-hidden border-l-4 border-l-primary/40">
+                {/* Reasoning Header */}
+                <button
+                  onClick={() => toggleGroup(changeIdx)}
+                  className="w-full text-left"
+                >
+                  <CardHeader className="bg-primary/5 pb-3 hover:bg-primary/10 transition-colors">
+                    <div className="flex items-start gap-3">
+                      {isGroupExpanded ? (
+                        <ChevronDown className="h-4 w-4 text-primary mt-1 shrink-0" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-primary mt-1 shrink-0" />
+                      )}
+                      <div className="p-1.5 rounded bg-primary/10 mt-0.5">
+                        <Lightbulb className="h-4 w-4 text-primary" />
                       </div>
-                      <DiffViewer diff={diffContent} filename={fileChange.path} />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium leading-relaxed">{change.reasoning}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {change.files.length} {change.files.length === 1 ? 'file' : 'files'} affected
+                        </p>
+                      </div>
                     </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          ))}
+                  </CardHeader>
+                </button>
+
+                {/* Files modified */}
+                {isGroupExpanded && (
+                  <CardContent className="p-0">
+                    {change.files.map((fileChange, fileIdx) => {
+                      const fileDiff = commitInfo.files.find(
+                        (f) => f.path === fileChange.path
+                      );
+
+                      if (!fileDiff) return null;
+
+                      const selectedHunks = fileChange.hunks
+                        .map((hunkNum) => fileDiff.hunks[hunkNum - 1])
+                        .filter((h) => h != null);
+
+                      if (selectedHunks.length === 0) return null;
+
+                      const diffContent = selectedHunks
+                        .map((hunk) => hunk.header + '\n' + hunk.content)
+                        .join('');
+
+                      const fileKey = `${changeIdx}|${fileChange.path}`;
+                      const isFileExpanded = expandedFiles.has(fileKey);
+
+                      return (
+                        <div key={fileIdx}>
+                          {fileIdx > 0 && <Separator />}
+                          <button
+                            onClick={() => toggleFile(fileKey)}
+                            className="w-full file-path-header hover:bg-muted/70 transition-colors"
+                          >
+                            {isFileExpanded ? (
+                              <ChevronDown className="h-4 w-4 file-icon shrink-0" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 file-icon shrink-0" />
+                            )}
+                            <span className="truncate flex-1 text-left">{fileChange.path}</span>
+                          </button>
+                          {isFileExpanded && (
+                            <DiffViewer diff={diffContent} filename={fileChange.path} />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                )}
+              </Card>
+            );
+          })}
         </div>
       )}
 
@@ -213,14 +282,24 @@ export default function TrackingVisualizer({
             const diffContent = fileDiff.hunks
               .map((hunk) => hunk.header + '\n' + hunk.content)
               .join('');
+            const isFileExpanded = expandedFiles.has(fileDiff.path);
 
             return (
               <Card key={fileIdx} className="overflow-hidden">
-                <div className="file-path-header">
-                  <File className="h-4 w-4 file-icon" />
-                  <span className="truncate">{fileDiff.path}</span>
-                </div>
-                <DiffViewer diff={diffContent} filename={fileDiff.path} />
+                <button
+                  onClick={() => toggleFile(fileDiff.path)}
+                  className="w-full file-path-header hover:bg-muted/70 transition-colors"
+                >
+                  {isFileExpanded ? (
+                    <ChevronDown className="h-4 w-4 file-icon shrink-0" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 file-icon shrink-0" />
+                  )}
+                  <span className="truncate flex-1 text-left">{fileDiff.path}</span>
+                </button>
+                {isFileExpanded && (
+                  <DiffViewer diff={diffContent} filename={fileDiff.path} />
+                )}
               </Card>
             );
           })}
