@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "commit": "441ef2b",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Add a Quick Start guide section to the homepage that teaches users how to set up their own repositories to use CodeWalker. The guide provides downloadable template files (CLAUDE.md and codewalker.md) rather than inline code snippets, making it easier to keep the templates in sync as they're actively developed.",
+      "files": [
+        { "path": "app/page.tsx", "hunks": [1, 2] },
+        { "path": "public/templates/CLAUDE.md", "hunks": [1] },
+        { "path": "public/templates/codewalker.md", "hunks": [1] }
+      ]
+    }
+  ]
+}
