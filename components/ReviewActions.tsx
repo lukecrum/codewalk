@@ -92,104 +92,103 @@ export default function ReviewActions({
   };
 
   return (
-    <Card className="border-t-4 border-t-primary/40">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <MessageSquare className="h-5 w-5" />
-          Review Changes
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <Card className="border-t-2 border-t-primary/40">
+      <CardContent className="space-y-3 px-3 py-3">
         {success && (
-          <div className="bg-green-100 border border-green-200 text-green-700 rounded-lg p-3 text-sm">
+          <div className="bg-green-100 border border-green-200 text-green-700 rounded-md p-2 text-xs">
             {success}
           </div>
         )}
 
         {error && (
-          <div className="bg-destructive/10 border border-destructive/20 text-destructive rounded-lg p-3 text-sm">
+          <div className="bg-destructive/10 border border-destructive/20 text-destructive rounded-md p-2 text-xs">
             {error}
           </div>
         )}
 
         {/* Review Type Buttons */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           <Button
+            size="sm"
             variant={selectedType === 'APPROVE' ? 'default' : 'outline'}
             onClick={() => handleSelectType('APPROVE')}
             className={
               selectedType === 'APPROVE'
-                ? 'bg-green-600 hover:bg-green-700 text-white'
-                : 'border-green-600 text-green-600 hover:bg-green-50'
+                ? 'bg-green-600 hover:bg-green-700 text-white text-xs h-7'
+                : 'border-green-600 text-green-600 hover:bg-green-50 text-xs h-7'
             }
             disabled={submitting}
           >
-            <Check className="h-4 w-4 mr-1" />
+            <Check className="h-3 w-3 mr-1" />
             Approve
           </Button>
           <Button
+            size="sm"
             variant={selectedType === 'COMMENT' ? 'default' : 'outline'}
             onClick={() => handleSelectType('COMMENT')}
+            className="text-xs h-7"
             disabled={submitting}
           >
-            <MessageSquare className="h-4 w-4 mr-1" />
+            <MessageSquare className="h-3 w-3 mr-1" />
             Comment
           </Button>
           <Button
+            size="sm"
             variant={selectedType === 'REQUEST_CHANGES' ? 'destructive' : 'outline'}
             onClick={() => handleSelectType('REQUEST_CHANGES')}
             className={
               selectedType !== 'REQUEST_CHANGES'
-                ? 'border-destructive text-destructive hover:bg-destructive/10'
-                : ''
+                ? 'border-destructive text-destructive hover:bg-destructive/10 text-xs h-7'
+                : 'text-xs h-7'
             }
             disabled={submitting}
           >
-            <X className="h-4 w-4 mr-1" />
-            Request Changes
+            <X className="h-3 w-3 mr-1" />
+            Request
           </Button>
         </div>
 
         {/* Comment Input */}
         {selectedType && (
-          <div className="space-y-3">
+          <div className="space-y-2">
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder={
                 selectedType === 'APPROVE'
-                  ? 'Leave a comment (optional)'
+                  ? 'Comment (optional)'
                   : selectedType === 'COMMENT'
                   ? 'Leave a comment'
-                  : 'Describe the changes you are requesting (required)'
+                  : 'Describe changes (required)'
               }
-              className="w-full h-24 p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 bg-background"
+              className="w-full h-16 p-2 text-xs border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 bg-background"
               disabled={submitting}
             />
-            <div className="flex gap-2 justify-end">
-              <Button variant="ghost" onClick={handleCancel} disabled={submitting}>
+            <div className="flex gap-1.5 justify-end">
+              <Button size="sm" variant="ghost" onClick={handleCancel} disabled={submitting} className="text-xs h-7">
                 Cancel
               </Button>
               <Button
+                size="sm"
                 onClick={handleSubmit}
                 disabled={submitting || (selectedType === 'REQUEST_CHANGES' && !comment.trim())}
                 className={
                   selectedType === 'APPROVE'
-                    ? 'bg-green-600 hover:bg-green-700'
+                    ? 'bg-green-600 hover:bg-green-700 text-xs h-7'
                     : selectedType === 'REQUEST_CHANGES'
-                    ? 'bg-destructive hover:bg-destructive/90'
-                    : ''
+                    ? 'bg-destructive hover:bg-destructive/90 text-xs h-7'
+                    : 'text-xs h-7'
                 }
               >
                 {submitting ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    Submitting...
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                    Submitting
                   </>
                 ) : (
                   <>
-                    <Send className="h-4 w-4 mr-1" />
-                    Submit Review
+                    <Send className="h-3 w-3 mr-1" />
+                    Submit
                   </>
                 )}
               </Button>

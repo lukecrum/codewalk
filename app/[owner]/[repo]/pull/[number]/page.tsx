@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import PRDiffViewer from '@/components/PRDiffViewer';
 import CommitList from '@/components/CommitList';
+import ReviewActions from '@/components/ReviewActions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -30,7 +31,10 @@ export default function PRPage() {
   const router = useRouter();
   const { token } = useAuth();
   const [activeTab, setActiveTab] = useState<'files' | 'commits'>('files');
+  const [diffActiveTab, setDiffActiveTab] = useState<'changes' | 'files'>('changes');
   const [prInfo, setPRInfo] = useState<PRInfo | null>(null);
+  const [hasFiles, setHasFiles] = useState(false);
+  const [hasTrackingData, setHasTrackingData] = useState(false);
 
   const owner = params.owner as string;
   const repo = params.repo as string;
@@ -46,6 +50,10 @@ export default function PRPage() {
       if (response.ok) {
         const data = await response.json();
         setPRInfo({ head: { ref: data.pr.head.ref } });
+        setHasFiles(data.files && data.files.length > 0);
+        // Check if any files have tracking data
+        const hasTracking = data.files?.some((file: { tracking: unknown[] }) => file.tracking && file.tracking.length > 0) ?? false;
+        setHasTrackingData(hasTracking);
       }
     };
     fetchPRInfo();
@@ -56,51 +64,82 @@ export default function PRPage() {
   };
 
   return (
-    <div className="animate-fade-in space-y-4">
-      <Link href={`/${owner}/${repo}`}>
-        <Button variant="ghost" size="sm" className="mb-2">
-          <ArrowLeft className="h-4 w-4 mr-1.5" />
-          All Pull Requests
-        </Button>
-      </Link>
+    <>
+      {/* Floating Action Buttons - fixed to bottom center of viewport */}
+      {activeTab === 'files' && (
+        <div className="fixed inset-x-0 bottom-6 z-50 flex justify-center pointer-events-none">
+          <div className="pointer-events-auto">
+            {diffActiveTab === 'changes' && hasTrackingData && (
+              <Button
+                onClick={() => setDiffActiveTab('files')}
+                className="gap-2 shadow-lg"
+              >
+                Proceed to Full Diff
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            )}
+            {diffActiveTab === 'files' && hasFiles && (
+              <div className="shadow-xl rounded-lg">
+                <ReviewActions
+                  owner={owner}
+                  repo={repo}
+                  prNumber={number}
+                  token={token || undefined}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
-      <Tabs
-        value={activeTab}
-        onValueChange={(v) => setActiveTab(v as 'files' | 'commits')}
-        className="w-full"
-      >
-        <TabsList className="w-full justify-start bg-card border rounded-lg p-1 h-auto">
-          <TabsTrigger value="files" className="data-[state=active]:bg-background">
-            Files Changed
-          </TabsTrigger>
-          <TabsTrigger value="commits" className="data-[state=active]:bg-background">
-            Commits
-          </TabsTrigger>
-        </TabsList>
+      <div className="animate-fade-in space-y-4">
+        <Link href={`/${owner}/${repo}`}>
+          <Button variant="ghost" size="sm" className="mb-2">
+            <ArrowLeft className="h-4 w-4 mr-1.5" />
+            All Pull Requests
+          </Button>
+        </Link>
 
-        <TabsContent value="files" className="mt-4">
-          <PRDiffViewer
-            owner={owner}
-            repo={repo}
-            prNumber={number}
-            token={token || undefined}
-          />
-        </TabsContent>
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as 'files' | 'commits')}
+          className="w-full"
+        >
+          <TabsList className="w-full justify-start bg-card border rounded-lg p-1 h-auto">
+            <TabsTrigger value="files" className="data-[state=active]:bg-background">
+              Files Changed
+            </TabsTrigger>
+            <TabsTrigger value="commits" className="data-[state=active]:bg-background">
+              Commits
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="commits" className="mt-4">
-          <Card>
-            <CardContent className="pt-6">
-              <CommitList
-                owner={owner}
-                repo={repo}
-                prNumber={number}
-                token={token || undefined}
-                onSelectCommit={handleSelectCommit}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+          <TabsContent value="files" className="mt-4">
+            <PRDiffViewer
+              owner={owner}
+              repo={repo}
+              prNumber={number}
+              token={token || undefined}
+              diffActiveTab={diffActiveTab}
+              onDiffTabChange={setDiffActiveTab}
+            />
+          </TabsContent>
+
+          <TabsContent value="commits" className="mt-4">
+            <Card>
+              <CardContent className="pt-6">
+                <CommitList
+                  owner={owner}
+                  repo={repo}
+                  prNumber={number}
+                  token={token || undefined}
+                  onSelectCommit={handleSelectCommit}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </>
   );
 }
