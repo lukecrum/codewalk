@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FileCode, Lightbulb, GitMerge, ArrowRight, ChevronDown, ChevronRight, File } from 'lucide-react';
+import { FileCode, Lightbulb, GitCommit, ArrowRight, ChevronDown, ChevronRight, File } from 'lucide-react';
 import DiffViewer from './DiffViewer';
+import CommitList from './CommitList';
 import ReviewActions from './ReviewActions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -40,13 +41,22 @@ type FileWithTracking = {
   }>;
 };
 
+type Commit = {
+  sha: string;
+  shortSha: string;
+  message: string;
+  author: string;
+  date: string;
+};
+
 type PRDiffViewerProps = {
   owner: string;
   repo: string;
   prNumber: number;
   token?: string;
-  diffActiveTab?: 'changes' | 'files';
-  onDiffTabChange?: (tab: 'changes' | 'files') => void;
+  diffActiveTab?: 'changes' | 'files' | 'commits';
+  onDiffTabChange?: (tab: 'changes' | 'files' | 'commits') => void;
+  onSelectCommit?: (commit: Commit) => void;
 };
 
 function getFileExtension(path: string): string {
@@ -54,16 +64,17 @@ function getFileExtension(path: string): string {
   return parts.length > 1 ? parts[parts.length - 1] : '';
 }
 
-export default function PRDiffViewer({ owner, repo, prNumber, token, diffActiveTab, onDiffTabChange }: PRDiffViewerProps) {
+export default function PRDiffViewer({ owner, repo, prNumber, token, diffActiveTab, onDiffTabChange, onSelectCommit }: PRDiffViewerProps) {
   const [prInfo, setPRInfo] = useState<PRInfo | null>(null);
   const [files, setFiles] = useState<FileWithTracking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [internalActiveTab, setInternalActiveTab] = useState<'changes' | 'files'>('changes');
+  const [internalActiveTab, setInternalActiveTab] = useState<'changes' | 'files' | 'commits'>('changes');
+  const [commitCount, setCommitCount] = useState<number | null>(null);
 
   // Use controlled state if provided, otherwise use internal state
   const activeTab = diffActiveTab ?? internalActiveTab;
-  const setActiveTab = (tab: 'changes' | 'files') => {
+  const setActiveTab = (tab: 'changes' | 'files' | 'commits') => {
     onDiffTabChange?.(tab);
     setInternalActiveTab(tab);
   };
@@ -119,6 +130,31 @@ export default function PRDiffViewer({ owner, repo, prNumber, token, diffActiveT
     };
 
     fetchPRDiff();
+  }, [owner, repo, prNumber, token]);
+
+  // Fetch commit count for the tab badge
+  useEffect(() => {
+    const fetchCommitCount = async () => {
+      try {
+        const params = new URLSearchParams({
+          owner,
+          repo,
+          pr_number: prNumber.toString(),
+        });
+        if (token) params.append('token', token);
+
+        const response = await fetch(`/api/github/commits?${params}`);
+        const data = await response.json();
+
+        if (response.ok && data.commits) {
+          setCommitCount(data.commits.length);
+        }
+      } catch {
+        // Silently fail - commit count is non-essential
+      }
+    };
+
+    fetchCommitCount();
   }, [owner, repo, prNumber, token]);
 
   const toggleFile = (path: string) => {
@@ -277,6 +313,15 @@ export default function PRDiffViewer({ owner, repo, prNumber, token, diffActiveT
               {files.length}
             </Badge>
           </TabsTrigger>
+          <TabsTrigger value="commits" className="gap-2 data-[state=active]:bg-background">
+            <GitCommit className="h-4 w-4" />
+            By Commit
+            {commitCount !== null && (
+              <Badge variant="secondary" className="ml-1 text-xs">
+                {commitCount}
+              </Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         {/* Changes Tab - Grouped by reasoning */}
@@ -418,6 +463,27 @@ export default function PRDiffViewer({ owner, repo, prNumber, token, diffActiveT
             })
           )}
 
+        </TabsContent>
+
+        {/* Commits Tab - Navigate commits individually */}
+        <TabsContent value="commits" className="mt-4">
+          <Card>
+            <CardContent className="pt-6">
+              {onSelectCommit ? (
+                <CommitList
+                  owner={owner}
+                  repo={repo}
+                  prNumber={prNumber}
+                  token={token}
+                  onSelectCommit={onSelectCommit}
+                />
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  Commit navigation not available
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
