@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "commit": "e608fb7",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Move the floating action buttons (Proceed to Full Diff and Review Actions) outside the animated container to fix viewport-fixed positioning. The parent's CSS transform was breaking the 'fixed' positioning, so buttons are now rendered as siblings to the animated content in the page component.",
+      "files": [
+        { "path": "app/[owner]/[repo]/pull/[number]/page.tsx", "hunks": [1, 2, 3, 4] },
+        { "path": "components/PRDiffViewer.tsx", "hunks": [1, 2, 3] }
+      ]
+    },
+    {
+      "reasoning": "Remove transform from fade-in animation to prevent it from creating a new containing block that would break fixed positioning of child elements.",
+      "files": [
+        { "path": "app/globals.css", "hunks": [1] }
+      ]
+    },
+    {
+      "reasoning": "Make the ReviewActions component more compact for better floating display. Reduced padding, font sizes, button heights, and textarea size to take up less screen real estate when floating at the bottom of the viewport.",
+      "files": [
+        { "path": "components/ReviewActions.tsx", "hunks": [1] }
+      ]
+    }
+  ]
+}
