@@ -1,34 +1,20 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { GitBranch, ArrowLeft } from 'lucide-react';
+import { GitBranch, Lightbulb, GitPullRequest, CheckCircle2, Eye } from 'lucide-react';
 import RepoSelector from '@/components/RepoSelector';
 import SignInButton from '@/components/SignInButton';
 import UserMenu from '@/components/UserMenu';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Home() {
   const router = useRouter();
   const { user, token, loading } = useAuth();
-  const [manualEntry, setManualEntry] = useState(false);
-  const [owner, setOwner] = useState('');
-  const [repo, setRepo] = useState('');
 
   const handleSelectRepo = (repoOwner: string, repoName: string) => {
     router.push(`/${repoOwner}/${repoName}`);
-  };
-
-  const handleManualSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (owner && repo) {
-      router.push(`/${owner}/${repo}`);
-    }
   };
 
   if (loading) {
@@ -48,20 +34,141 @@ export default function Home() {
           </div>
         </header>
         <main className="flex-1 flex items-center justify-center p-6">
-          <Card className="w-full max-w-3xl">
-            <CardContent className="pt-6">
-              <div className="space-y-4">
-                <Skeleton className="h-8 w-48 mx-auto" />
-                <Skeleton className="h-4 w-64 mx-auto" />
-                <Skeleton className="h-10 w-48 mx-auto" />
-              </div>
-            </CardContent>
-          </Card>
+          <div className="w-full max-w-md space-y-4">
+            <Skeleton className="h-8 w-48 mx-auto" />
+            <Skeleton className="h-4 w-64 mx-auto" />
+            <Skeleton className="h-10 w-48 mx-auto" />
+          </div>
         </main>
       </div>
     );
   }
 
+  // Signed out - show landing page
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        {/* Header */}
+        <header className="border-b bg-card">
+          <div className="max-w-7xl mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <GitBranch className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-semibold">CodeWalker</h1>
+                  <p className="text-xs text-muted-foreground">Visualize code changes with context</p>
+                </div>
+              </div>
+              <SignInButton />
+            </div>
+          </div>
+        </header>
+
+        {/* Hero Section */}
+        <main className="flex-1">
+          <div className="max-w-5xl mx-auto px-6 py-16">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-bold tracking-tight mb-4">
+                Code reviews that make sense
+              </h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
+                CodeWalker groups code changes by their reasoning, so you can understand
+                the &quot;why&quot; behind every line &mdash; not just the &quot;what&quot;.
+              </p>
+              <SignInButton />
+            </div>
+
+            {/* Features */}
+            <div className="grid md:grid-cols-3 gap-6">
+              <Card className="border-t-4 border-t-blue-500/50">
+                <CardContent className="pt-6">
+                  <div className="p-2 rounded-lg bg-blue-500/10 w-fit mb-4">
+                    <Lightbulb className="h-5 w-5 text-blue-500" />
+                  </div>
+                  <h3 className="font-semibold mb-2">Reasoning-First View</h3>
+                  <p className="text-sm text-muted-foreground">
+                    See changes grouped by intent. Understand what each set of changes
+                    accomplishes before diving into the code.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-t-4 border-t-green-500/50">
+                <CardContent className="pt-6">
+                  <div className="p-2 rounded-lg bg-green-500/10 w-fit mb-4">
+                    <GitPullRequest className="h-5 w-5 text-green-500" />
+                  </div>
+                  <h3 className="font-semibold mb-2">Full PR Integration</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Review pull requests, approve changes, and leave comments &mdash;
+                    all from a single, focused interface.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-t-4 border-t-purple-500/50">
+                <CardContent className="pt-6">
+                  <div className="p-2 rounded-lg bg-purple-500/10 w-fit mb-4">
+                    <Eye className="h-5 w-5 text-purple-500" />
+                  </div>
+                  <h3 className="font-semibold mb-2">Commit-Level Detail</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Drill down into individual commits to see exactly how each
+                    piece of the puzzle fits together.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* How it works */}
+            <div className="mt-20">
+              <h3 className="text-2xl font-bold text-center mb-8">How it works</h3>
+              <div className="grid md:grid-cols-3 gap-8 text-center">
+                <div>
+                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center mx-auto mb-4">
+                    1
+                  </div>
+                  <h4 className="font-medium mb-2">Sign in with GitHub</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Connect your account to access your repositories
+                  </p>
+                </div>
+                <div>
+                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center mx-auto mb-4">
+                    2
+                  </div>
+                  <h4 className="font-medium mb-2">Select a pull request</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Choose from your open or recently closed PRs
+                  </p>
+                </div>
+                <div>
+                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center mx-auto mb-4">
+                    3
+                  </div>
+                  <h4 className="font-medium mb-2">Review with context</h4>
+                  <p className="text-sm text-muted-foreground">
+                    See changes organized by reasoning, then approve
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        {/* Footer */}
+        <footer className="border-t bg-card py-6">
+          <div className="max-w-5xl mx-auto px-6 text-center text-sm text-muted-foreground">
+            Built with Claude Code
+          </div>
+        </footer>
+      </div>
+    );
+  }
+
+  // Signed in - show repo selector
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
@@ -77,82 +184,29 @@ export default function Home() {
                 <p className="text-xs text-muted-foreground">Visualize code changes with context</p>
               </div>
             </div>
-            {user && <UserMenu />}
+            <UserMenu />
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center p-6">
-        <Card className="w-full max-w-3xl">
-          <CardHeader className="text-center pb-2">
-            <CardTitle className="text-2xl">Welcome to CodeWalker</CardTitle>
-            <CardDescription className="text-base">
-              {user
-                ? 'Select a repository to visualize pull request changes with structured reasoning'
-                : 'Sign in with GitHub to get started'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            {!user ? (
-              <div className="flex flex-col items-center gap-4">
-                <SignInButton />
-                <p className="text-sm text-muted-foreground text-center max-w-md">
-                  CodeWalker helps you understand code changes by grouping them by reasoning,
-                  making code reviews faster and more effective.
-                </p>
-              </div>
-            ) : !manualEntry ? (
+      <main className="flex-1 py-8">
+        <div className="max-w-3xl mx-auto px-6">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold mb-2">Select a repository</h2>
+            <p className="text-muted-foreground">
+              Choose a repository to view its pull requests
+            </p>
+          </div>
+          <Card>
+            <CardContent className="pt-6">
               <RepoSelector
                 token={token || undefined}
                 onSelectRepo={handleSelectRepo}
-                onManualEntry={() => setManualEntry(true)}
               />
-            ) : (
-              <form onSubmit={handleManualSubmit} className="space-y-5">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium">Manual Repository Entry</h3>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setManualEntry(false)}
-                  >
-                    <ArrowLeft className="h-4 w-4 mr-1" />
-                    Back to list
-                  </Button>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Repository Owner</label>
-                    <Input
-                      type="text"
-                      value={owner}
-                      onChange={(e) => setOwner(e.target.value)}
-                      placeholder="octocat"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Repository Name</label>
-                    <Input
-                      type="text"
-                      value={repo}
-                      onChange={(e) => setRepo(e.target.value)}
-                      placeholder="my-repo"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <Button type="submit" className="w-full">
-                  Continue
-                </Button>
-              </form>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </main>
     </div>
   );

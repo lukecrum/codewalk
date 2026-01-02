@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Lock, Globe, ExternalLink, Loader2 } from 'lucide-react';
+import { Search, Lock, Globe, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,7 +21,6 @@ type Repo = {
 type RepoSelectorProps = {
   token?: string;
   onSelectRepo: (owner: string, repo: string) => void;
-  onManualEntry: () => void;
 };
 
 const languageColors: Record<string, string> = {
@@ -55,7 +53,7 @@ function formatDate(dateString: string): string {
   return `${Math.floor(diffDays / 365)} years ago`;
 }
 
-export default function RepoSelector({ token, onSelectRepo, onManualEntry }: RepoSelectorProps) {
+export default function RepoSelector({ token, onSelectRepo }: RepoSelectorProps) {
   const [repos, setRepos] = useState<Repo[]>([]);
   const [filteredRepos, setFilteredRepos] = useState<Repo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,10 +107,6 @@ export default function RepoSelector({ token, onSelectRepo, onManualEntry }: Rep
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-6 w-48" />
-          <Skeleton className="h-8 w-24" />
-        </div>
         <Skeleton className="h-10 w-full" />
         <div className="space-y-2">
           {[...Array(5)].map((_, i) => (
@@ -125,35 +119,22 @@ export default function RepoSelector({ token, onSelectRepo, onManualEntry }: Rep
 
   if (error) {
     return (
-      <div className="space-y-4">
-        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-          <p className="text-destructive font-medium text-sm">Failed to load repositories</p>
-          <p className="text-destructive/80 text-sm mt-1">{error}</p>
-        </div>
-        <Button onClick={onManualEntry} className="w-full">
-          <ExternalLink className="h-4 w-4 mr-2" />
-          Enter Repository Manually
-        </Button>
+      <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+        <p className="text-destructive font-medium text-sm">Failed to load repositories</p>
+        <p className="text-destructive/80 text-sm mt-1">{error}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="font-medium">Your Repositories</h3>
-        <Button variant="ghost" size="sm" onClick={onManualEntry}>
-          Enter manually
-        </Button>
-      </div>
-
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search repositories..."
+          placeholder="Search your repositories..."
           className="pl-9"
         />
       </div>
@@ -177,9 +158,9 @@ export default function RepoSelector({ token, onSelectRepo, onManualEntry }: Rep
               <button
                 key={repo.id}
                 onClick={() => onSelectRepo(repo.owner, repo.name)}
-                className="w-full text-left p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors group"
+                className="w-full text-left p-4 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/30 transition-all group"
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="font-medium text-foreground group-hover:text-primary transition-colors truncate">
@@ -199,7 +180,7 @@ export default function RepoSelector({ token, onSelectRepo, onManualEntry }: Rep
                     </div>
 
                     {repo.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                      <p className="text-sm text-muted-foreground line-clamp-1 mb-2">
                         {repo.description}
                       </p>
                     )}
@@ -214,6 +195,7 @@ export default function RepoSelector({ token, onSelectRepo, onManualEntry }: Rep
                       <span>Updated {formatDate(repo.updated_at)}</span>
                     </div>
                   </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
                 </div>
               </button>
             ))
