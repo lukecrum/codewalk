@@ -4,11 +4,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import PRDiffViewer from '@/components/PRDiffViewer';
-import CommitList from '@/components/CommitList';
 import ReviewActions from '@/components/ReviewActions';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 
@@ -30,8 +27,7 @@ export default function PRPage() {
   const params = useParams();
   const router = useRouter();
   const { token } = useAuth();
-  const [activeTab, setActiveTab] = useState<'files' | 'commits'>('files');
-  const [diffActiveTab, setDiffActiveTab] = useState<'changes' | 'files'>('changes');
+  const [activeTab, setActiveTab] = useState<'changes' | 'files' | 'commits'>('changes');
   const [prInfo, setPRInfo] = useState<PRInfo | null>(null);
   const [hasFiles, setHasFiles] = useState(false);
   const [hasTrackingData, setHasTrackingData] = useState(false);
@@ -66,31 +62,29 @@ export default function PRPage() {
   return (
     <>
       {/* Floating Action Buttons - fixed to bottom center of viewport */}
-      {activeTab === 'files' && (
-        <div className="fixed inset-x-0 bottom-6 z-50 flex justify-center pointer-events-none">
-          <div className="pointer-events-auto">
-            {diffActiveTab === 'changes' && hasTrackingData && (
-              <Button
-                onClick={() => setDiffActiveTab('files')}
-                className="gap-2 shadow-lg"
-              >
-                Proceed to Full Diff
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            )}
-            {diffActiveTab === 'files' && hasFiles && (
-              <div className="shadow-xl rounded-lg">
-                <ReviewActions
-                  owner={owner}
-                  repo={repo}
-                  prNumber={number}
-                  token={token || undefined}
-                />
-              </div>
-            )}
-          </div>
+      <div className="fixed inset-x-0 bottom-6 z-50 flex justify-center pointer-events-none">
+        <div className="pointer-events-auto">
+          {activeTab === 'changes' && hasTrackingData && (
+            <Button
+              onClick={() => setActiveTab('files')}
+              className="gap-2 shadow-lg"
+            >
+              Proceed to Full Diff
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          )}
+          {activeTab === 'files' && hasFiles && (
+            <div className="shadow-xl rounded-lg">
+              <ReviewActions
+                owner={owner}
+                repo={repo}
+                prNumber={number}
+                token={token || undefined}
+              />
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       <div className="animate-fade-in space-y-4">
         <Link href={`/${owner}/${repo}`}>
@@ -100,45 +94,15 @@ export default function PRPage() {
           </Button>
         </Link>
 
-        <Tabs
-          value={activeTab}
-          onValueChange={(v) => setActiveTab(v as 'files' | 'commits')}
-          className="w-full"
-        >
-          <TabsList className="w-full justify-start bg-card border rounded-lg p-1 h-auto">
-            <TabsTrigger value="files" className="data-[state=active]:bg-background">
-              Files Changed
-            </TabsTrigger>
-            <TabsTrigger value="commits" className="data-[state=active]:bg-background">
-              Commits
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="files" className="mt-4">
-            <PRDiffViewer
-              owner={owner}
-              repo={repo}
-              prNumber={number}
-              token={token || undefined}
-              diffActiveTab={diffActiveTab}
-              onDiffTabChange={setDiffActiveTab}
-            />
-          </TabsContent>
-
-          <TabsContent value="commits" className="mt-4">
-            <Card>
-              <CardContent className="pt-6">
-                <CommitList
-                  owner={owner}
-                  repo={repo}
-                  prNumber={number}
-                  token={token || undefined}
-                  onSelectCommit={handleSelectCommit}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        <PRDiffViewer
+          owner={owner}
+          repo={repo}
+          prNumber={number}
+          token={token || undefined}
+          diffActiveTab={activeTab}
+          onDiffTabChange={setActiveTab}
+          onSelectCommit={handleSelectCommit}
+        />
       </div>
     </>
   );
