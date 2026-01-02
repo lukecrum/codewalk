@@ -45,6 +45,8 @@ type PRDiffViewerProps = {
   repo: string;
   prNumber: number;
   token?: string;
+  diffActiveTab?: 'changes' | 'files';
+  onDiffTabChange?: (tab: 'changes' | 'files') => void;
 };
 
 function getFileExtension(path: string): string {
@@ -52,12 +54,19 @@ function getFileExtension(path: string): string {
   return parts.length > 1 ? parts[parts.length - 1] : '';
 }
 
-export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffViewerProps) {
+export default function PRDiffViewer({ owner, repo, prNumber, token, diffActiveTab, onDiffTabChange }: PRDiffViewerProps) {
   const [prInfo, setPRInfo] = useState<PRInfo | null>(null);
   const [files, setFiles] = useState<FileWithTracking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'changes' | 'files'>('changes');
+  const [internalActiveTab, setInternalActiveTab] = useState<'changes' | 'files'>('changes');
+
+  // Use controlled state if provided, otherwise use internal state
+  const activeTab = diffActiveTab ?? internalActiveTab;
+  const setActiveTab = (tab: 'changes' | 'files') => {
+    onDiffTabChange?.(tab);
+    setInternalActiveTab(tab);
+  };
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
   const [expandedReasoningGroups, setExpandedReasoningGroups] = useState<Set<string>>(new Set());
   const [expandedReasoningFiles, setExpandedReasoningFiles] = useState<Set<string>>(new Set());
@@ -363,18 +372,6 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
             })
           )}
 
-          {/* Proceed to Full Diff button */}
-          {hasTrackingData && (
-            <div className="flex justify-center pt-4">
-              <Button
-                onClick={() => setActiveTab('files')}
-                className="gap-2"
-              >
-                Proceed to Full Diff
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
         </TabsContent>
 
         {/* Files Tab - Plain file-based view */}
@@ -421,15 +418,6 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
             })
           )}
 
-          {/* Review Actions */}
-          {files.length > 0 && (
-            <ReviewActions
-              owner={owner}
-              repo={repo}
-              prNumber={prNumber}
-              token={token}
-            />
-          )}
         </TabsContent>
       </Tabs>
     </div>
