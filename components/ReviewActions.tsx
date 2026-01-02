@@ -93,13 +93,7 @@ export default function ReviewActions({
 
   return (
     <Card className="border-t-2 border-t-primary/40">
-      <CardHeader className="pb-2 pt-3 px-3">
-        <CardTitle className="text-sm flex items-center gap-1.5">
-          <MessageSquare className="h-4 w-4" />
-          Review
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3 px-3 pb-3">
+      <CardContent className="space-y-3 px-3 py-3">
         {success && (
           <div className="bg-green-100 border border-green-200 text-green-700 rounded-md p-2 text-xs">
             {success}
