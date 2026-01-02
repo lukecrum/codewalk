@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "commit": "2711da2",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Consolidate PR view navigation by removing the redundant top-level 'Files Changed' / 'Commits' tabs. The commit view is now accessible via a third 'By Commit' tab alongside 'By Reasoning' and 'By File', creating a simpler and more unified navigation experience.",
+      "files": [
+        { "path": "app/[owner]/[repo]/pull/[number]/page.tsx", "hunks": [1, 2, 3, 4] },
+        { "path": "components/PRDiffViewer.tsx", "hunks": [1, 2, 3, 4, 5, 6] }
+      ]
+    }
+  ]
+}
