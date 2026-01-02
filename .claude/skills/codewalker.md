@@ -10,7 +10,7 @@ In addition to your normal summary, you should also keep track of what you chang
 
 The purpose of the file is to walk the user through the code changes step-by-step so that they can understand the code changes you made, why you made them, and how they relate to other changes you made during that task. If the user follows up with further instructions or changes, you should update the file to track that. A full walkthrough can be found below.
 
-User prompts are surrounded by `<USER>` tags, your code changes are surrounded by `<ASSISTANT>` tags, example tracking files are surrounded by `<TRACK>` tags, code snippets are surrounded by `<CODEBASE>` tags, and notes are surrounded in `<NOTE>` tags. For the purposes of this example, the codebase is defined in a single file.
+User prompts are surrounded by `<USER>` tags, your code changes are surrounded by `<ASSISTANT>` tags, example tracking files are surrounded by `<TRACK>` tags, and notes are surrounded in `<NOTE>` tags.
 
 ## Tracking File Schema
 
@@ -72,7 +72,7 @@ If it's a distinct new task, create a new commit and new tracking file.
 
 1. Before committing, check if a git repo exists with `git status`. Only run `git init` if there isn't one.
 2. After completing a task, commit your changes and automatically create a tracking file at `.codewalker/<commit-hash>.json`
-3. Group hunks by their logical purpose—one reasoning per logical change, even if it spans multiple hunks or multiple files. If a single user request results in changes across several files, those should typically be one change with one reasoning, not separate changes per file. Ensure that you include EVERY hunk and file change that was made and is relevant to the logical change. Do NOT leave anything out, no matter how trivial.
+3. Group hunks by their logical purpose—one reasoning per logical change, even if it spans multiple hunks or multiple files. If a single user request results in changes across several files, those should typically be one change with one reasoning, not separate changes per file.
 4. Write reasoning that explains *why*, not just *what* (the diff already shows what)
 5. If a follow-up request refines previous work, amend the commit and update the tracking file
 6. If a follow-up request is a new task, create a new commit and new tracking file
@@ -82,170 +82,9 @@ Do not wait for the user to ask for the tracking file—create it automatically 
 
 **Important:** Always complete the tracking step after every task, even in long conversations with multiple tasks. Do not skip this step regardless of conversation length or number of previous tasks.
 
-## Walkthrough Example
+## Walkthrough Example: Single File
 
-<CODEBASE file="task-manager.html">
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Task Manager</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 500px; margin: 2rem auto; padding: 0 1rem; }
-    .task { display: flex; gap: 0.5rem; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #eee; }
-    .task.completed span { text-decoration: line-through; color: #888; }
-    .task span { flex: 1; }
-    input[type="text"] { flex: 1; padding: 0.5rem; }
-    button { padding: 0.5rem 1rem; cursor: pointer; }
-    .stats { margin-top: 1rem; color: #666; }
-  </style>
-</head>
-<body>
-  <h1>Task Manager</h1>
-  
-  <div id="app">
-    <form id="task-form">
-      <input type="text" id="task-input" placeholder="Enter a new task..." required>
-      <button type="submit">Add</button>
-    </form>
-    
-    <div id="task-list"></div>
-    <div id="stats" class="stats"></div>
-  </div>
-
-  <script>
-    let tasks = [];
-
-    const form = document.getElementById('task-form');
-    const input = document.getElementById('task-input');
-    const taskList = document.getElementById('task-list');
-    const statsEl = document.getElementById('stats');
-
-    function generateId() {
-      return Math.random().toString(36).substring(2, 9);
-    }
-
-    function addTask(text) {
-      const task = {
-        id: generateId(),
-        text: text.trim(),
-        completed: false,
-        createdAt: new Date()
-      };
-      tasks.push(task);
-      saveToStorage();
-      render();
-    }
-
-    function toggleTask(id) {
-      const task = tasks.find(t => t.id === id);
-      if (task) {
-        task.completed = !task.completed;
-        saveToStorage();
-        render();
-      }
-    }
-
-    function deleteTask(id) {
-      tasks = tasks.filter(t => t.id !== id);
-      saveToStorage();
-      render();
-    }
-
-    function saveToStorage() {
-      localStorage.setItem('tasks', JSON.stringify(tasks));
-    }
-
-    function loadFromStorage() {
-      const stored = localStorage.getItem('tasks');
-      if (stored) {
-        tasks = JSON.parse(stored);
-      }
-    }
-
-    function getStats() {
-      return {
-        total: tasks.length,
-        completed: tasks.filter(t => t.completed).length,
-        pending: tasks.filter(t => !t.completed).length
-      };
-    }
-
-    function render() {
-      if (tasks.length === 0) {
-        taskList.innerHTML = '<p>No tasks yet. Add one above!</p>';
-      } else {
-        taskList.innerHTML = tasks.map(task => `
-          <div class="task ${task.completed ? 'completed' : ''}" data-id="${task.id}">
-            <input type="checkbox" ${task.completed ? 'checked' : ''}>
-            <span>${escapeHtml(task.text)}</span>
-            <button class="delete-btn">Delete</button>
-          </div>
-        `).join('');
-      }
-
-      const stats = getStats();
-      statsEl.textContent = `Total: ${stats.total} | Completed: ${stats.completed} | Pending: ${stats.pending}`;
-    }
-
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
-
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const text = input.value.trim();
-      if (text) {
-        addTask(text);
-        input.value = '';
-      }
-    });
-
-    taskList.addEventListener('click', (e) => {
-      const target = e.target;
-      const taskEl = target.closest('.task');
-      if (!taskEl) return;
-      
-      const id = taskEl.dataset.id;
-      
-      if (target.matches('input[type="checkbox"]')) {
-        toggleTask(id);
-      } else if (target.matches('.delete-btn')) {
-        deleteTask(id);
-      }
-    });
-
-    loadFromStorage();
-    render();
-  </script>
-</body>
-</html>
-</CODEBASE>
-
-<NOTE>
-The codebase above is the initial state. After creating it, commit it:
-`git add -A && git commit -m "Initial task manager"`
-Then get the commit hash with `git rev-parse --short HEAD` (e.g., `f0e1d2c`).
-</NOTE>
-
-<TRACK file=".codewalker/f0e1d2c.json">
-{
-  "version": 1,
-  "commit": "f0e1d2c",
-  "author": "claude",
-  "changes": [
-    {
-      "reasoning": "Create initial task manager application with add, complete, and delete functionality. Tasks persist to localStorage and display running statistics.",
-      "files": [
-        { "path": "task-manager.html", "hunks": [1] }
-      ]
-    }
-  ]
-}
-</TRACK>
+This example shows a task manager app (single HTML file with embedded CSS/JS).
 
 <USER>
 Hide the "completed" and "pending" tags. Instead, add color coding to show the status of each task.
@@ -269,10 +108,6 @@ I'll make two changes:
      }
 ```
 </ASSISTANT>
-
-<NOTE>
-After committing this change, run `git rev-parse --short HEAD` to get the commit hash (e.g., `a1b2c3d`), then run `git show a1b2c3d --format=""` to view the hunks.
-</NOTE>
 
 <TRACK file=".codewalker/a1b2c3d.json">
 {
@@ -315,10 +150,10 @@ I'll update the colors.
 </ASSISTANT>
 
 <NOTE>
-Since this is a refinement of the same logical task, amend the previous commit rather than creating a new one:
+Since this is a refinement of the same logical task, amend the previous commit:
 `git add -A && git commit --amend --no-edit`
 
-Then update the tracking file to reflect the final state.
+Then update the tracking file to reflect the final state. The reasoning now describes blue/gray, not orange/green.
 </NOTE>
 
 <TRACK file=".codewalker/a1b2c3d.json">
@@ -343,70 +178,203 @@ Then update the tracking file to reflect the final state.
 }
 </TRACK>
 
-<NOTE>
-The tracking file reflects the final decision (blue/gray), not the intermediate attempt (orange/green). The commit hash stays the same because we amended. If the user's feedback results in a separate commit instead, create a new tracking file for that commit.
-</NOTE>
+## Walkthrough Example: Multiple Files
+
+This example shows a notes app with three files: `index.html`, `styles.css`, and `app.js`.
 
 <USER>
-Can you also add a "Clear completed" button?
+Add a dark mode toggle that persists across sessions.
 </USER>
 
 <ASSISTANT>
-I'll add a button that removes all completed tasks at once.
+I'll add a dark mode toggle. This requires changes to all three files:
+1. Add a toggle button to the HTML
+2. Add dark mode styles to the CSS
+3. Add toggle logic and persistence to the JS
 
 ```diff
-@@ -27,6 +27,7 @@
-     <div id="task-list"></div>
-     <div id="stats" class="stats"></div>
-+    <button id="clear-completed" style="margin-top: 1rem;">Clear completed</button>
-   </div>
-@@ -65,6 +66,11 @@
-     function deleteTask(id) {
-       tasks = tasks.filter(t => t.id !== id);
-       saveToStorage();
-       render();
-     }
-+
-+    function clearCompleted() {
-+      tasks = tasks.filter(t => !t.completed);
-+      saveToStorage();
-+      render();
-+    }
-@@ -112,6 +118,10 @@
-       }
-     });
+--- a/index.html
++++ b/index.html
+@@ -7,6 +7,7 @@
+ </head>
+ <body>
+   <div class="container">
++    <button id="theme-toggle">Toggle Dark Mode</button>
+     <h1>Notes</h1>
+```
 
-+    document.getElementById('clear-completed').addEventListener('click', () => {
-+      clearCompleted();
-+    });
+```diff
+--- a/styles.css
++++ b/styles.css
+@@ -5,6 +5,11 @@ body {
+   background: #f5f5f5;
++  transition: background 0.2s, color 0.2s;
++}
 +
-     loadFromStorage();
-     render();
++body.dark {
++  background: #1a1a1a;
++  color: #f5f5f5;
+ }
+@@ -30,6 +35,10 @@
+ }
+ 
++body.dark .note {
++  background: #2a2a2a;
++}
+@@ -37,6 +46,10 @@
+ .note p {
+   color: #666;
++}
++
++body.dark .note p {
++  color: #aaa;
+ }
+```
+
+```diff
+--- a/app.js
++++ b/app.js
+@@ -4,6 +4,7 @@
+ const notesList = document.getElementById('notes-list');
++const themeToggle = document.getElementById('theme-toggle');
+@@ -32,6 +33,18 @@ function loadFromStorage() {
+ }
+ 
++function loadTheme() {
++  const dark = localStorage.getItem('darkMode') === 'true';
++  if (dark) {
++    document.body.classList.add('dark');
++  }
++}
++
++function toggleTheme() {
++  document.body.classList.toggle('dark');
++  localStorage.setItem('darkMode', document.body.classList.contains('dark'));
++}
+@@ -72,5 +85,10 @@ notesList.addEventListener('click', (e) => {
+ });
+ 
++themeToggle.addEventListener('click', () => {
++  toggleTheme();
++});
++
++loadTheme();
+ loadFromStorage();
 ```
 </ASSISTANT>
 
-<TRACK file=".codewalker/b2c3d4e.json">
+<NOTE>
+Run `git show c3d4e5f --format=""` to see hunks:
+- index.html: 1 hunk
+- styles.css: 3 hunks
+- app.js: 3 hunks
+
+Since this is all one logical change ("add dark mode"), group everything under ONE reasoning.
+</NOTE>
+
+<TRACK file=".codewalker/c3d4e5f.json">
 {
   "version": 1,
-  "commit": "b2c3d4e",
+  "commit": "c3d4e5f",
   "author": "claude",
   "changes": [
     {
-      "reasoning": "Add 'Clear completed' button to the UI below the stats. Provides a quick way to bulk-remove finished tasks.",
+      "reasoning": "Add dark mode toggle that persists to localStorage. Includes a toggle button in the header, CSS rules for dark theme styling with smooth transitions, and JS logic to save/load the preference.",
       "files": [
-        { "path": "task-manager.html", "hunks": [1] }
+        { "path": "index.html", "hunks": [1] },
+        { "path": "styles.css", "hunks": [1, 2, 3] },
+        { "path": "app.js", "hunks": [1, 2, 3] }
       ]
-    },
+    }
+  ]
+}
+</TRACK>
+
+<USER>
+The spacing feels cramped. Add more breathing room between elements.
+</USER>
+
+<ASSISTANT>
+I'll increase spacing throughout the app.
+
+```diff
+--- a/index.html
++++ b/index.html
+@@ -7,7 +7,9 @@
+   <div class="container">
+-    <button id="theme-toggle">Toggle Dark Mode</button>
++    <header>
++      <button id="theme-toggle">Toggle Dark Mode</button>
++    </header>
+     <h1>Notes</h1>
+```
+
+```diff
+--- a/styles.css
++++ b/styles.css
+@@ -15,11 +15,15 @@
+ .container {
+   max-width: 600px;
++  padding: 1rem;
+ }
+ 
+ h1 {
+-  margin-bottom: 1rem;
++  margin-bottom: 2rem;
++}
++
++header {
++  margin-bottom: 1.5rem;
+ }
+@@ -20,8 +20,8 @@
+ #note-form {
+-  gap: 0.5rem;
+-  margin-bottom: 1rem;
++  gap: 1rem;
++  margin-bottom: 2rem;
+ }
+@@ -25,7 +25,7 @@
+ #note-form input,
+ #note-form textarea {
+-  padding: 0.5rem;
++  padding: 0.75rem;
+ }
+@@ -30,8 +30,8 @@
+ .note {
+-  padding: 1rem;
+-  margin-bottom: 0.5rem;
++  padding: 1.5rem;
++  margin-bottom: 1rem;
+ }
+```
+
+```diff
+--- a/app.js
++++ b/app.js
+@@ -1,5 +1,6 @@
+ let notes = [];
+ 
++const header = document.querySelector('header');
+ const form = document.getElementById('note-form');
+```
+</ASSISTANT>
+
+<NOTE>
+Again, this is one logical change affecting all three files. Group under ONE reasoning.
+</NOTE>
+
+<TRACK file=".codewalker/d4e5f6g.json">
+{
+  "version": 1,
+  "commit": "d4e5f6g",
+  "author": "claude",
+  "changes": [
     {
-      "reasoning": "Implement clearCompleted() function that filters out all tasks with completed=true, then saves and re-renders.",
+      "reasoning": "Increase spacing throughout the app for better visual breathing room. Added container padding, increased margins between sections, larger gaps in the form, more padding on inputs and notes, and wrapped the theme toggle in a header element for consistent spacing.",
       "files": [
-        { "path": "task-manager.html", "hunks": [2] }
-      ]
-    },
-    {
-      "reasoning": "Wire up click event listener for the clear-completed button to call the new function.",
-      "files": [
-        { "path": "task-manager.html", "hunks": [3] }
+        { "path": "index.html", "hunks": [1] },
+        { "path": "styles.css", "hunks": [1, 2, 3, 4] },
+        { "path": "app.js", "hunks": [1] }
       ]
     }
   ]
