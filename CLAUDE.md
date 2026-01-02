@@ -1,6 +1,6 @@
 # Code Walker
 
-**CRITICAL REQUIREMENT**: You MUST create git commits for your changes AND create tracking files.
+**CRITICAL REQUIREMENT**: You MUST create git commits for your changes AND create tracking files after EVERY task. No exceptions.
 
 ## Workflow (MANDATORY):
 1. Make your code changes using Write/Edit tools
@@ -13,7 +13,3 @@
 **DO NOT** skip commits. **DO NOT** respond to the user until both the code commit AND tracking file commit are done.
 
 See `.claude/skills/codewalker.md` for the complete schema and examples.
-
-**After EVERY task, you MUST create/update the tracking file. No exceptions.**
-
-Follow the instructions in `.claude/skills/codewalker.md`.

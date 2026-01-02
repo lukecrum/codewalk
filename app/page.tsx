@@ -122,40 +122,6 @@ export default function Home() {
               </Card>
             </div>
 
-            {/* How it works */}
-            <div className="mt-20">
-              <h3 className="text-2xl font-bold text-center mb-8">How it works</h3>
-              <div className="grid md:grid-cols-3 gap-8 text-center">
-                <div>
-                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center mx-auto mb-4">
-                    1
-                  </div>
-                  <h4 className="font-medium mb-2">Sign in with GitHub</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Connect your account to access your repositories
-                  </p>
-                </div>
-                <div>
-                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center mx-auto mb-4">
-                    2
-                  </div>
-                  <h4 className="font-medium mb-2">Select a pull request</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Choose from your open or recently closed PRs
-                  </p>
-                </div>
-                <div>
-                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center mx-auto mb-4">
-                    3
-                  </div>
-                  <h4 className="font-medium mb-2">Review with context</h4>
-                  <p className="text-sm text-muted-foreground">
-                    See changes organized by reasoning, then approve
-                  </p>
-                </div>
-              </div>
-            </div>
-
             {/* Quick Start */}
             <div className="mt-20">
               <h3 className="text-2xl font-bold text-center mb-4">Quick Start</h3>
