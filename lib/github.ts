@@ -1,5 +1,5 @@
 import { Octokit } from '@octokit/rest';
-import { CommitInfo, FileDiff, ParsedHunk } from '@/types/codewalker';
+import { CommitInfo, FileDiff, HunkGap, ParsedHunk } from '@/types/codewalker';
 
 export function getOctokit(token?: string) {
   return new Octokit({
@@ -173,4 +173,46 @@ export async function getTrackingFile(
   }
 
   return null;
+}
+
+export function computeHunkGaps(hunks: ParsedHunk[]): HunkGap[] {
+  if (hunks.length === 0) return [];
+
+  const gaps: HunkGap[] = [];
+
+  // Gap before first hunk (if it doesn't start at line 1)
+  if (hunks[0].oldStart > 1) {
+    gaps.push({
+      afterHunkIndex: -1,
+      oldStartLine: 1,
+      oldEndLine: hunks[0].oldStart - 1,
+      newStartLine: 1,
+      newEndLine: hunks[0].newStart - 1,
+      lineCount: hunks[0].oldStart - 1,
+    });
+  }
+
+  // Gaps between consecutive hunks
+  for (let i = 0; i < hunks.length - 1; i++) {
+    const current = hunks[i];
+    const next = hunks[i + 1];
+
+    // Calculate where current hunk ends
+    const currentOldEnd = current.oldStart + current.oldLines - 1;
+    const currentNewEnd = current.newStart + current.newLines - 1;
+
+    // Check if there's a gap to the next hunk
+    if (next.oldStart > currentOldEnd + 1) {
+      gaps.push({
+        afterHunkIndex: i,
+        oldStartLine: currentOldEnd + 1,
+        oldEndLine: next.oldStart - 1,
+        newStartLine: currentNewEnd + 1,
+        newEndLine: next.newStart - 1,
+        lineCount: next.oldStart - currentOldEnd - 1,
+      });
+    }
+  }
+
+  return gaps;
 }

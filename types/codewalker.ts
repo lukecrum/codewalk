@@ -60,3 +60,12 @@ export type CommitInfo = {
   diff: string;
   files: FileDiff[];
 };
+
+export type HunkGap = {
+  afterHunkIndex: number;  // -1 = before first hunk, 0 = after hunk[0], etc.
+  oldStartLine: number;
+  oldEndLine: number;
+  newStartLine: number;
+  newEndLine: number;
+  lineCount: number;
+};

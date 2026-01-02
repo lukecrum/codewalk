@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { FileCode, Lightbulb, GitCommit, ArrowRight, ChevronDown, ChevronRight, File } from 'lucide-react';
 import DiffViewer from './DiffViewer';
+import ExpandableDiffViewer from './ExpandableDiffViewer';
 import CommitList from './CommitList';
+import { ParsedHunk } from '@/types/codewalker';
 import ReviewActions from './ReviewActions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -32,7 +34,7 @@ type PRInfo = {
 
 type FileWithTracking = {
   path: string;
-  hunks: Array<{ header: string; content: string }>;
+  hunks: ParsedHunk[];
   tracking: Array<{
     commitSha: string;
     commitMessage: string;
@@ -379,13 +381,9 @@ export default function PRDiffViewer({ owner, repo, prNumber, token, diffActiveT
 
                         const selectedHunks = fileInfo.hunkNumbers
                           .map((hunkNum) => file.hunks[hunkNum - 1])
-                          .filter((h) => h != null);
+                          .filter((h): h is ParsedHunk => h != null);
 
                         if (selectedHunks.length === 0) return null;
-
-                        const diffContent = selectedHunks
-                          .map((hunk) => hunk.header + '\n' + hunk.content)
-                          .join('');
 
                         const fileKey = `${key}|${file.path}`;
                         const isFileExpanded = expandedReasoningFiles.has(fileKey);
@@ -405,7 +403,14 @@ export default function PRDiffViewer({ owner, repo, prNumber, token, diffActiveT
                               <span className="truncate flex-1 text-left">{file.path}</span>
                             </button>
                             {isFileExpanded && (
-                              <DiffViewer diff={diffContent} filename={file.path} />
+                              <ExpandableDiffViewer
+                                filename={file.path}
+                                hunks={selectedHunks}
+                                owner={owner}
+                                repo={repo}
+                                commitSha={prInfo.head.sha}
+                                token={token}
+                              />
                             )}
                           </div>
                         );
@@ -431,9 +436,6 @@ export default function PRDiffViewer({ owner, repo, prNumber, token, diffActiveT
             </Card>
           ) : (
             files.map((file) => {
-              const diffContent = file.hunks
-                .map((hunk) => hunk.header + '\n' + hunk.content)
-                .join('');
               const isExpanded = expandedFiles.has(file.path);
               const ext = getFileExtension(file.path);
 
@@ -456,7 +458,14 @@ export default function PRDiffViewer({ owner, repo, prNumber, token, diffActiveT
                     )}
                   </button>
                   {isExpanded && (
-                    <DiffViewer diff={diffContent} filename={file.path} />
+                    <ExpandableDiffViewer
+                      filename={file.path}
+                      hunks={file.hunks}
+                      owner={owner}
+                      repo={repo}
+                      commitSha={prInfo.head.sha}
+                      token={token}
+                    />
                   )}
                 </Card>
               );

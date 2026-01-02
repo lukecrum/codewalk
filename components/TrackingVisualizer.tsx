@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { Lightbulb, User, GitCommit, AlertTriangle, File, ChevronDown, ChevronRight } from 'lucide-react';
-import { Changeset, CommitInfo } from '@/types/codewalker';
+import { Changeset, CommitInfo, ParsedHunk } from '@/types/codewalker';
 import DiffViewer from './DiffViewer';
+import ExpandableDiffViewer from './ExpandableDiffViewer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -231,13 +232,9 @@ export default function TrackingVisualizer({
 
                       const selectedHunks = fileChange.hunks
                         .map((hunkNum) => fileDiff.hunks[hunkNum - 1])
-                        .filter((h) => h != null);
+                        .filter((h): h is ParsedHunk => h != null);
 
                       if (selectedHunks.length === 0) return null;
-
-                      const diffContent = selectedHunks
-                        .map((hunk) => hunk.header + '\n' + hunk.content)
-                        .join('');
 
                       const fileKey = `${changeIdx}|${fileChange.path}`;
                       const isFileExpanded = expandedFiles.has(fileKey);
@@ -257,7 +254,14 @@ export default function TrackingVisualizer({
                             <span className="truncate flex-1 text-left">{fileChange.path}</span>
                           </button>
                           {isFileExpanded && (
-                            <DiffViewer diff={diffContent} filename={fileChange.path} />
+                            <ExpandableDiffViewer
+                              filename={fileChange.path}
+                              hunks={selectedHunks}
+                              owner={owner}
+                              repo={repo}
+                              commitSha={commitSha}
+                              token={token}
+                            />
                           )}
                         </div>
                       );
@@ -279,9 +283,6 @@ export default function TrackingVisualizer({
           </div>
 
           {commitInfo.files.map((fileDiff, fileIdx) => {
-            const diffContent = fileDiff.hunks
-              .map((hunk) => hunk.header + '\n' + hunk.content)
-              .join('');
             const isFileExpanded = expandedFiles.has(fileDiff.path);
 
             return (
@@ -298,7 +299,14 @@ export default function TrackingVisualizer({
                   <span className="truncate flex-1 text-left">{fileDiff.path}</span>
                 </button>
                 {isFileExpanded && (
-                  <DiffViewer diff={diffContent} filename={fileDiff.path} />
+                  <ExpandableDiffViewer
+                    filename={fileDiff.path}
+                    hunks={fileDiff.hunks}
+                    owner={owner}
+                    repo={repo}
+                    commitSha={commitSha}
+                    token={token}
+                  />
                 )}
               </Card>
             );

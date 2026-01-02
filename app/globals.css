@@ -230,3 +230,148 @@
 .animate-fade-in {
   animation: fadeIn 0.2s ease-out forwards;
 }
+
+/* Expandable diff viewer styles */
+.expandable-diff {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+/* Full-width expand button row */
+.expandable-diff .expand-row {
+  background-color: color-mix(in oklch, var(--primary) 5%, transparent);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  padding: 0.25rem 0;
+}
+
+.expandable-diff .expand-row:first-child {
+  border-top: none;
+}
+
+.expandable-diff .expand-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  background: transparent;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.expandable-diff .expand-button:hover {
+  background-color: color-mix(in oklch, var(--primary) 10%, transparent);
+  color: var(--foreground);
+}
+
+.expandable-diff .expand-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.expandable-diff .expand-error {
+  color: var(--destructive);
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+}
+
+/* Diff segment with two panels */
+.expandable-diff .diff-segment-panels {
+  display: flex;
+  width: 100%;
+}
+
+.expandable-diff .diff-panel {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.expandable-diff .diff-panel-left {
+  border-right: 1px solid var(--border);
+}
+
+.expandable-diff .diff-table {
+  border-collapse: collapse;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  width: 100%;
+}
+
+.expandable-diff .diff-line-number {
+  user-select: none;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  background-color: color-mix(in oklch, var(--muted) 50%, transparent);
+  border-right: 1px solid var(--border);
+  padding: 0 0.5rem;
+  min-width: 3rem;
+  width: 3rem;
+  text-align: right;
+  vertical-align: top;
+}
+
+.expandable-diff .diff-line-content {
+  padding: 0;
+  vertical-align: top;
+  white-space: pre;
+  line-height: 1.625;
+  padding-left: 0.25rem;
+}
+
+.expandable-diff .diff-line-prefix {
+  user-select: none;
+  display: inline-block;
+  width: 1rem;
+}
+
+.expandable-diff .diff-line-text {
+  white-space: pre;
+}
+
+/* Hunk header */
+.expandable-diff .diff-hunk-header {
+  background-color: #eff6ff;
+}
+
+.expandable-diff .diff-hunk-info {
+  color: #1d4ed8;
+  font-size: 0.75rem;
+}
+
+/* Line types */
+.expandable-diff .diff-ins {
+  background-color: #f0fdf4;
+}
+
+.expandable-diff .diff-ins.diff-line-number {
+  background-color: color-mix(in oklch, #bbf7d0 80%, transparent);
+  color: #15803d;
+}
+
+.expandable-diff .diff-del {
+  background-color: #fef2f2;
+}
+
+.expandable-diff .diff-del.diff-line-number {
+  background-color: color-mix(in oklch, #fecaca 80%, transparent);
+  color: #b91c1c;
+}
+
+.expandable-diff .diff-context {
+  background-color: transparent;
+}
+
+.expandable-diff .diff-empty {
+  background-color: color-mix(in oklch, var(--muted) 30%, transparent);
+}
+
+.expandable-diff .diff-empty .diff-line-number {
+  background-color: color-mix(in oklch, var(--muted) 30%, transparent);
+}
