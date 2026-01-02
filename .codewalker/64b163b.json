@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "commit": "64b163b",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Create API endpoint to fetch specific line ranges from files at a given commit. This enables fetching the 'hidden' lines between diff hunks when the user clicks expand.",
+      "files": [
+        { "path": "app/api/github/file-content/route.ts", "hunks": [1] }
+      ]
+    },
+    {
+      "reasoning": "Add HunkGap type to represent gaps between hunks (with line number ranges) and computeHunkGaps utility function that analyzes ParsedHunk arrays to find where gaps exist between consecutive hunks.",
+      "files": [
+        { "path": "types/codewalker.ts", "hunks": [1] },
+        { "path": "lib/github.ts", "hunks": [1, 2] }
+      ]
+    },
+    {
+      "reasoning": "Create ExpandableDiffViewer component that renders diffs with expand buttons between segments. Each segment has independently scrollable left/right panels. Expand buttons span full width and fetch hidden lines on click.",
+      "files": [
+        { "path": "components/ExpandableDiffViewer.tsx", "hunks": [1] },
+        { "path": "app/globals.css", "hunks": [1] }
+      ]
+    },
+    {
+      "reasoning": "Integrate ExpandableDiffViewer into PRDiffViewer and TrackingVisualizer, replacing DiffViewer usage. Pass required props (owner, repo, commitSha, token) to enable fetching hidden lines.",
+      "files": [
+        { "path": "components/PRDiffViewer.tsx", "hunks": [1, 2, 3, 4, 5, 6] },
+        { "path": "components/TrackingVisualizer.tsx", "hunks": [1, 2, 3, 4, 5] }
+      ]
+    }
+  ]
+}
