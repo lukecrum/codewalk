@@ -42,11 +42,6 @@ export default function ReviewActions({
       return;
     }
 
-    if (!token) {
-      setError('A GitHub token is required to submit reviews');
-      return;
-    }
-
     setSubmitting(true);
     setError(null);
 
@@ -117,12 +112,6 @@ export default function ReviewActions({
           </div>
         )}
 
-        {!token && (
-          <div className="bg-amber-100 border border-amber-200 text-amber-700 rounded-lg p-3 text-sm">
-            A GitHub token is required to submit reviews. Please add one in the configuration.
-          </div>
-        )}
-
         {/* Review Type Buttons */}
         <div className="flex flex-wrap gap-2">
           <Button
@@ -133,7 +122,7 @@ export default function ReviewActions({
                 ? 'bg-green-600 hover:bg-green-700 text-white'
                 : 'border-green-600 text-green-600 hover:bg-green-50'
             }
-            disabled={submitting || !token}
+            disabled={submitting}
           >
             <Check className="h-4 w-4 mr-1" />
             Approve
@@ -141,7 +130,7 @@ export default function ReviewActions({
           <Button
             variant={selectedType === 'COMMENT' ? 'default' : 'outline'}
             onClick={() => handleSelectType('COMMENT')}
-            disabled={submitting || !token}
+            disabled={submitting}
           >
             <MessageSquare className="h-4 w-4 mr-1" />
             Comment
@@ -154,7 +143,7 @@ export default function ReviewActions({
                 ? 'border-destructive text-destructive hover:bg-destructive/10'
                 : ''
             }
-            disabled={submitting || !token}
+            disabled={submitting}
           >
             <X className="h-4 w-4 mr-1" />
             Request Changes
