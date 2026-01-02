@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "commit": "47ab69d",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Add a 'Proceed to Full Diff' button at the end of the By Reasoning tab. This provides a clear call-to-action for users who have reviewed the logical changes and are ready to see the complete file-by-file diff before approving the PR.",
+      "files": [
+        { "path": "components/PRDiffViewer.tsx", "hunks": [1, 2] }
+      ]
+    },
+    {
+      "reasoning": "Add PR review functionality with approve/comment/request changes buttons. Creates a ReviewActions component that mirrors GitHub's review interface, an API route that uses Octokit to submit reviews, and integrates the component at the bottom of the By File tab so users can submit their review after examining all changes.",
+      "files": [
+        { "path": "app/api/github/review/route.ts", "hunks": [1] },
+        { "path": "components/ReviewActions.tsx", "hunks": [1] },
+        { "path": "components/PRDiffViewer.tsx", "hunks": [1, 3] }
+      ]
+    }
+  ]
+}

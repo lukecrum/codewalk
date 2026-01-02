@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import { FileCode, Lightbulb, GitMerge, ArrowRight, ChevronDown, ChevronRight, File } from 'lucide-react';
 import DiffViewer from './DiffViewer';
+import ReviewActions from './ReviewActions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
 
 type PRInfo = {
   number: number;
@@ -360,6 +362,19 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
               );
             })
           )}
+
+          {/* Proceed to Full Diff button */}
+          {hasTrackingData && (
+            <div className="flex justify-center pt-4">
+              <Button
+                onClick={() => setActiveTab('files')}
+                className="gap-2"
+              >
+                Proceed to Full Diff
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </TabsContent>
 
         {/* Files Tab - Plain file-based view */}
@@ -404,6 +419,16 @@ export default function PRDiffViewer({ owner, repo, prNumber, token }: PRDiffVie
                 </Card>
               );
             })
+          )}
+
+          {/* Review Actions */}
+          {files.length > 0 && (
+            <ReviewActions
+              owner={owner}
+              repo={repo}
+              prNumber={prNumber}
+              token={token}
+            />
           )}
         </TabsContent>
       </Tabs>
