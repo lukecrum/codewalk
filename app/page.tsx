@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { GitBranch, Lightbulb, GitPullRequest, CheckCircle2, Eye } from 'lucide-react';
+import { GitBranch, Lightbulb, GitPullRequest, Eye, Download } from 'lucide-react';
 import RepoSelector from '@/components/RepoSelector';
 import SignInButton from '@/components/SignInButton';
 import UserMenu from '@/components/UserMenu';
@@ -153,6 +153,82 @@ export default function Home() {
                     See changes organized by reasoning, then approve
                   </p>
                 </div>
+              </div>
+            </div>
+
+            {/* Quick Start */}
+            <div className="mt-20">
+              <h3 className="text-2xl font-bold text-center mb-4">Quick Start</h3>
+              <p className="text-center text-muted-foreground mb-8 max-w-2xl mx-auto">
+                Set up your repository so Claude Code generates tracking files automatically with every commit.
+              </p>
+
+              <div className="space-y-6">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center flex-shrink-0 mt-1">
+                        1
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold mb-2">Add <code className="text-sm bg-muted px-1.5 py-0.5 rounded">CLAUDE.md</code> to your repo root</h4>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          This file tells Claude Code to follow the CodeWalker workflow and create tracking files.
+                        </p>
+                        <a
+                          href="/templates/CLAUDE.md"
+                          download="CLAUDE.md"
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-medium transition-colors"
+                        >
+                          <Download className="h-4 w-4" />
+                          Download CLAUDE.md
+                        </a>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center flex-shrink-0 mt-1">
+                        2
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold mb-2">Add <code className="text-sm bg-muted px-1.5 py-0.5 rounded">.claude/skills/codewalker.md</code></h4>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          This skill file defines the tracking file schema and provides detailed examples for Claude.
+                        </p>
+                        <a
+                          href="/templates/codewalker.md"
+                          download="codewalker.md"
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-medium transition-colors"
+                        >
+                          <Download className="h-4 w-4" />
+                          Download codewalker.md
+                        </a>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center flex-shrink-0 mt-1">
+                        3
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold mb-2">Start coding with Claude Code</h4>
+                        <p className="text-sm text-muted-foreground">
+                          That&apos;s it! When you use Claude Code in your repo, it will automatically create
+                          tracking files in <code className="text-xs bg-muted px-1.5 py-0.5 rounded">.codewalker/</code> for
+                          each commit. Push your changes and view them here with full reasoning context.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </div>
