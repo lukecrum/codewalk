@@ -1,7 +1,11 @@
 {
   "name": "walk-me-thru-your-changes",
   "version": "1.0.0",
+  "private": true,
   "description": "",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
