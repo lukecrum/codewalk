@@ -555,6 +555,51 @@ export class TreeView {
     if (newIndex >= 0 && newIndex < this.selectableItems.length) {
       this.state.selectedIndex = newIndex;
       this.buildUI();
+      this.scrollToSelected();
+    }
+  }
+
+  private scrollToSelected(): void {
+    // Calculate position of selected item and scroll to it
+    const selectedItem = this.selectableItems[this.state.selectedIndex];
+    if (!selectedItem) return;
+
+    // Find the position by walking through content
+    const contentChildren = this.scrollBox.content.getChildren();
+    let position = 0;
+
+    for (const reasoningBox of contentChildren) {
+      const item = this.itemRenderables.find(
+        (it) => it.type === 'reasoning' && it.renderable === reasoningBox
+      );
+
+      if (item && item.type === 'reasoning' && item.reasoningIdx === selectedItem.reasoningIdx) {
+        if (selectedItem.type === 'reasoning') {
+          // Scroll to this reasoning
+          this.scrollBox.scrollTop = position;
+          return;
+        }
+
+        // Look for file within this reasoning
+        const reasoningChildren = reasoningBox.getChildren();
+        let fileOffset = reasoningChildren[0]?.height || 2; // Skip reasoning header
+
+        for (let i = 1; i < reasoningChildren.length; i++) {
+          const fileBox = reasoningChildren[i];
+          const fileItem = this.itemRenderables.find(
+            (it) => it.type === 'file' && it.renderable === fileBox
+          );
+
+          if (fileItem && fileItem.filePath === selectedItem.filePath) {
+            this.scrollBox.scrollTop = position + fileOffset;
+            return;
+          }
+
+          fileOffset += fileBox.height;
+        }
+      }
+
+      position += reasoningBox.height;
     }
   }
 
