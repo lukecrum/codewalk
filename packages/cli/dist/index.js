@@ -20799,9 +20799,12 @@ class TreeView {
   state;
   rootBox;
   headerBox;
+  stickyHeaderBox;
   scrollBox;
   footerBox;
   selectableItems = [];
+  itemRenderables = [];
+  reasoningPositions = new Map;
   constructor(renderer, state) {
     this.renderer = renderer;
     this.state = state;
@@ -20818,6 +20821,14 @@ class TreeView {
       borderColor: "#555555",
       backgroundColor: "#1a1a2e"
     });
+    this.stickyHeaderBox = new BoxRenderable(renderer, {
+      width: "100%",
+      height: 0,
+      backgroundColor: "#1a1a2e",
+      borderColor: "#555555",
+      paddingLeft: 1,
+      visible: false
+    });
     this.scrollBox = new ScrollBoxRenderable(renderer, {
       width: "100%",
       flexGrow: 1,
@@ -20826,21 +20837,96 @@ class TreeView {
     });
     this.footerBox = new BoxRenderable(renderer, {
       width: "100%",
-      height: 2,
+      height: 3,
       border: true,
       borderStyle: "single",
       borderColor: "#555555",
       backgroundColor: "#1a1a2e",
-      paddingLeft: 1
+      paddingLeft: 1,
+      paddingTop: 0
     });
     this.rootBox.add(this.headerBox);
+    this.rootBox.add(this.stickyHeaderBox);
     this.rootBox.add(this.scrollBox);
     this.rootBox.add(this.footerBox);
     renderer.root.add(this.rootBox);
+    this.setupScrollTracking();
     this.buildUI();
   }
+  setupScrollTracking() {
+    let lastScrollTop = -1;
+    this.renderer.setFrameCallback(async () => {
+      const scrollTop = this.scrollBox.scrollTop;
+      if (scrollTop !== lastScrollTop) {
+        lastScrollTop = scrollTop;
+        this.updateStickyHeader(scrollTop);
+      }
+    });
+  }
+  updateStickyHeader(scrollTop) {
+    const contentChildren = this.scrollBox.content.getChildren();
+    let contentOffset = 0;
+    for (let i = 0;i < contentChildren.length; i++) {
+      const reasoningBox = contentChildren[i];
+      const item = this.itemRenderables.find((it) => it.type === "reasoning" && it.renderable === reasoningBox);
+      if (!item) {
+        contentOffset += reasoningBox.height;
+        continue;
+      }
+      const boxTop = contentOffset;
+      const boxHeight = reasoningBox.height;
+      const boxBottom = boxTop + boxHeight;
+      const reasoningHeaderBox = reasoningBox.getChildren()[0];
+      if (!reasoningHeaderBox) {
+        contentOffset += boxHeight;
+        continue;
+      }
+      const reasoningHeaderHeight = reasoningHeaderBox.height || 2;
+      if (scrollTop > boxTop && scrollTop < boxBottom - reasoningHeaderHeight) {
+        const offset = scrollTop - boxTop;
+        reasoningHeaderBox.translateY = offset;
+        reasoningHeaderBox.zIndex = 100;
+      } else {
+        reasoningHeaderBox.translateY = 0;
+        reasoningHeaderBox.zIndex = 0;
+      }
+      const reasoningChildren = reasoningBox.getChildren();
+      let fileOffset = reasoningHeaderHeight;
+      for (let j = 1;j < reasoningChildren.length; j++) {
+        const fileBox = reasoningChildren[j];
+        const fileItem = this.itemRenderables.find((it) => it.type === "file" && it.renderable === fileBox);
+        if (!fileItem) {
+          fileOffset += fileBox.height;
+          continue;
+        }
+        const fileTop = boxTop + fileOffset;
+        const fileHeight = fileBox.height;
+        const fileBottom = fileTop + fileHeight;
+        const fileHeaderBox = fileBox.getChildren()[0];
+        if (!fileHeaderBox) {
+          fileOffset += fileHeight;
+          continue;
+        }
+        const fileHeaderHeight = fileHeaderBox.height || 1;
+        const stickyTop = reasoningHeaderHeight;
+        if (scrollTop > fileTop - stickyTop && scrollTop < fileBottom - fileHeaderHeight - stickyTop) {
+          const offset = scrollTop - fileTop + stickyTop;
+          fileHeaderBox.translateY = offset;
+          fileHeaderBox.zIndex = 99;
+        } else {
+          fileHeaderBox.translateY = 0;
+          fileHeaderBox.zIndex = 0;
+        }
+        fileOffset += fileHeight;
+      }
+      contentOffset += boxHeight;
+    }
+    this.stickyHeaderBox.visible = false;
+    this.stickyHeaderBox.height = 0;
+  }
   buildUI() {
-    this.selectableItems = [];
+    this.selectableItems = this.computeSelectableItems();
+    this.itemRenderables = [];
     const children = this.scrollBox.getChildren();
     for (const child of children) {
       this.scrollBox.remove(child.id);
@@ -20848,6 +20934,18 @@ class TreeView {
     this.buildHeader();
     this.buildContent();
     this.buildFooter();
+  }
+  computeSelectableItems() {
+    const items = [];
+    this.state.reasoningGroups.forEach((group, reasoningIdx) => {
+      items.push({ type: "reasoning", reasoningIdx });
+      if (this.state.expandedReasonings.has(reasoningIdx)) {
+        group.files.forEach((file) => {
+          items.push({ type: "file", reasoningIdx, filePath: file.path });
+        });
+      }
+    });
+    return items;
   }
   buildHeader() {
     const headerChildren = this.headerBox.getChildren();
@@ -20867,22 +20965,43 @@ class TreeView {
     this.state.reasoningGroups.forEach((group, reasoningIdx) => {
       const isExpanded = this.state.expandedReasonings.has(reasoningIdx);
       const isSelected = this.isReasoningSelected(reasoningIdx);
+      const isHighlighted = isExpanded;
       const reasoningBox = new BoxRenderable(this.renderer, {
         width: "100%",
         flexDirection: "column",
         paddingLeft: 1,
         paddingTop: 1,
-        backgroundColor: isSelected ? "#2a2a4e" : undefined
+        backgroundColor: isHighlighted ? "#1a1a3e" : undefined
+      });
+      const defaultBg = isHighlighted ? "#2a2a4e" : "#0f0f1a";
+      const hoverBg = "#3a3a5e";
+      const reasoningHeaderBox = new BoxRenderable(this.renderer, {
+        width: "100%",
+        backgroundColor: defaultBg,
+        border: isSelected ? ["left"] : false,
+        borderColor: "#88ccff",
+        borderStyle: "single",
+        paddingBottom: 1,
+        onMouseOver: function() {
+          this.backgroundColor = hoverBg;
+        },
+        onMouseOut: function() {
+          this.backgroundColor = defaultBg;
+        },
+        onMouseDown: () => {
+          this.toggleReasoningByIndex(reasoningIdx);
+        }
       });
       const arrow = isExpanded ? "\u25BC" : "\u25B6";
       const fileCount = group.files.length;
       const reasoningHeader = new TextRenderable(this.renderer, {
         content: `${arrow} ${group.reasoning} (${fileCount} file${fileCount !== 1 ? "s" : ""})`,
-        fg: isSelected ? "#ffffff" : "#cccccc",
+        fg: isHighlighted ? "#ffffff" : "#cccccc",
         width: "100%"
       });
-      reasoningBox.add(reasoningHeader);
-      this.selectableItems.push({
+      reasoningHeaderBox.add(reasoningHeader);
+      reasoningBox.add(reasoningHeaderBox);
+      this.itemRenderables.push({
         type: "reasoning",
         reasoningIdx,
         renderable: reasoningBox
@@ -20896,16 +21015,35 @@ class TreeView {
             width: "100%",
             flexDirection: "column",
             paddingLeft: 3,
-            paddingTop: 1,
-            backgroundColor: isFileSelected ? "#2a2a4e" : undefined
+            paddingTop: 1
+          });
+          const filePath = file.path;
+          const fileDefaultBg = "#0f0f1a";
+          const fileHoverBg = "#3a3a5e";
+          const fileHeaderBox = new BoxRenderable(this.renderer, {
+            width: "100%",
+            backgroundColor: fileDefaultBg,
+            border: isFileSelected ? ["left"] : false,
+            borderColor: "#88ccff",
+            borderStyle: "single",
+            onMouseOver: function() {
+              this.backgroundColor = fileHoverBg;
+            },
+            onMouseOut: function() {
+              this.backgroundColor = fileDefaultBg;
+            },
+            onMouseDown: () => {
+              this.toggleFileByKey(reasoningIdx, filePath);
+            }
           });
           const fileArrow = isFileExpanded ? "\u25BC" : "\u25B6";
           const fileHeader = new TextRenderable(this.renderer, {
             content: `${fileArrow} ${file.path}`,
-            fg: isFileSelected ? "#88ccff" : "#6699cc"
+            fg: "#6699cc"
           });
-          fileBox.add(fileHeader);
-          this.selectableItems.push({
+          fileHeaderBox.add(fileHeader);
+          fileBox.add(fileHeaderBox);
+          this.itemRenderables.push({
             type: "file",
             reasoningIdx,
             filePath: file.path,
@@ -20947,6 +21085,42 @@ class TreeView {
       this.scrollBox.add(reasoningBox);
     });
   }
+  toggleReasoningByIndex(reasoningIdx) {
+    const itemIndex = this.selectableItems.findIndex((item) => item.type === "reasoning" && item.reasoningIdx === reasoningIdx);
+    if (itemIndex >= 0) {
+      this.state.selectedIndex = itemIndex;
+    }
+    if (this.state.expandedReasonings.has(reasoningIdx)) {
+      this.state.expandedReasonings.delete(reasoningIdx);
+      for (const key of this.state.expandedFiles) {
+        if (key.startsWith(`${reasoningIdx}|`)) {
+          this.state.expandedFiles.delete(key);
+        }
+      }
+    } else {
+      this.state.expandedReasonings.add(reasoningIdx);
+      const group = this.state.reasoningGroups[reasoningIdx];
+      if (group) {
+        for (const file of group.files) {
+          this.state.expandedFiles.add(`${reasoningIdx}|${file.path}`);
+        }
+      }
+    }
+    this.buildUI();
+  }
+  toggleFileByKey(reasoningIdx, filePath) {
+    const itemIndex = this.selectableItems.findIndex((item) => item.type === "file" && item.reasoningIdx === reasoningIdx && item.filePath === filePath);
+    if (itemIndex >= 0) {
+      this.state.selectedIndex = itemIndex;
+    }
+    const fileKey = `${reasoningIdx}|${filePath}`;
+    if (this.state.expandedFiles.has(fileKey)) {
+      this.state.expandedFiles.delete(fileKey);
+    } else {
+      this.state.expandedFiles.add(fileKey);
+    }
+    this.buildUI();
+  }
   buildFooter() {
     const footerChildren = this.footerBox.getChildren();
     for (const child of footerChildren) {
@@ -20955,39 +21129,45 @@ class TreeView {
     const totalItems = this.selectableItems.length;
     const currentPos = this.state.selectedIndex + 1;
     const footerText = new TextRenderable(this.renderer, {
-      content: `j/k: navigate \u2502 Enter: expand/collapse \u2502 q: quit          [${currentPos}/${totalItems}]`,
+      content: `j/k: navigate \u2502 Enter/click: expand \u2502 q: quit          [${currentPos}/${totalItems}]`,
       fg: "#888888"
     });
     this.footerBox.add(footerText);
   }
   isReasoningSelected(reasoningIdx) {
-    const item = this.selectableItems[this.state.selectedIndex];
-    return item?.type === "reasoning" && item.reasoningIdx === reasoningIdx;
+    const selectedItem = this.selectableItems[this.state.selectedIndex];
+    return selectedItem?.type === "reasoning" && selectedItem.reasoningIdx === reasoningIdx;
   }
   isFileSelected(reasoningIdx, filePath) {
-    const item = this.selectableItems[this.state.selectedIndex];
-    return item?.type === "file" && item.reasoningIdx === reasoningIdx && item.filePath === filePath;
+    const selectedItem = this.selectableItems[this.state.selectedIndex];
+    return selectedItem?.type === "file" && selectedItem.reasoningIdx === reasoningIdx && selectedItem.filePath === filePath;
   }
   getItemCount() {
     return this.selectableItems.length;
   }
   toggleExpand() {
-    const item = this.selectableItems[this.state.selectedIndex];
-    if (!item)
+    const selectedItem = this.selectableItems[this.state.selectedIndex];
+    if (!selectedItem)
       return;
-    if (item.type === "reasoning") {
-      if (this.state.expandedReasonings.has(item.reasoningIdx)) {
-        this.state.expandedReasonings.delete(item.reasoningIdx);
+    if (selectedItem.type === "reasoning") {
+      if (this.state.expandedReasonings.has(selectedItem.reasoningIdx)) {
+        this.state.expandedReasonings.delete(selectedItem.reasoningIdx);
         for (const key of this.state.expandedFiles) {
-          if (key.startsWith(`${item.reasoningIdx}|`)) {
+          if (key.startsWith(`${selectedItem.reasoningIdx}|`)) {
             this.state.expandedFiles.delete(key);
           }
         }
       } else {
-        this.state.expandedReasonings.add(item.reasoningIdx);
+        this.state.expandedReasonings.add(selectedItem.reasoningIdx);
+        const group = this.state.reasoningGroups[selectedItem.reasoningIdx];
+        if (group) {
+          for (const file of group.files) {
+            this.state.expandedFiles.add(`${selectedItem.reasoningIdx}|${file.path}`);
+          }
+        }
       }
-    } else if (item.type === "file" && item.filePath) {
-      const fileKey = `${item.reasoningIdx}|${item.filePath}`;
+    } else if (selectedItem.type === "file" && selectedItem.filePath) {
+      const fileKey = `${selectedItem.reasoningIdx}|${selectedItem.filePath}`;
       if (this.state.expandedFiles.has(fileKey)) {
         this.state.expandedFiles.delete(fileKey);
       } else {
@@ -21052,15 +21232,15 @@ async function visualizeCommand(options) {
         process.exit(0);
         break;
       case "j":
-      case "ArrowDown":
+      case "down":
         treeView.moveSelection(1);
         break;
       case "k":
-      case "ArrowUp":
+      case "up":
         treeView.moveSelection(-1);
         break;
-      case "Enter":
-      case " ":
+      case "return":
+      case "space":
         treeView.toggleExpand();
         break;
       case "g":

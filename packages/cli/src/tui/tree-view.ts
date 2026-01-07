@@ -50,7 +50,11 @@ interface SelectableItem {
   type: 'reasoning' | 'file';
   reasoningIdx: number;
   filePath?: string;
+}
+
+interface SelectableItemWithRenderable extends SelectableItem {
   renderable: BoxRenderable;
+  contentTop?: number; // Track position in scroll content
 }
 
 export class TreeView {
@@ -58,9 +62,12 @@ export class TreeView {
   private state: AppState;
   private rootBox: BoxRenderable;
   private headerBox: BoxRenderable;
+  private stickyHeaderBox: BoxRenderable;
   private scrollBox: ScrollBoxRenderable;
   private footerBox: BoxRenderable;
   private selectableItems: SelectableItem[] = [];
+  private itemRenderables: SelectableItemWithRenderable[] = [];
+  private reasoningPositions: Map<number, { top: number; bottom: number }> = new Map();
 
   constructor(renderer: CliRenderer, state: AppState) {
     this.renderer = renderer;
@@ -83,6 +90,16 @@ export class TreeView {
       backgroundColor: '#1a1a2e',
     });
 
+    // Sticky header for current reasoning (hidden initially)
+    this.stickyHeaderBox = new BoxRenderable(renderer, {
+      width: '100%',
+      height: 0,
+      backgroundColor: '#1a1a2e',
+      borderColor: '#555555',
+      paddingLeft: 1,
+      visible: false,
+    });
+
     // Scrollable content area
     this.scrollBox = new ScrollBoxRenderable(renderer, {
       width: '100%',
@@ -94,26 +111,134 @@ export class TreeView {
     // Footer - fixed at bottom
     this.footerBox = new BoxRenderable(renderer, {
       width: '100%',
-      height: 2,
+      height: 3,
       border: true,
       borderStyle: 'single',
       borderColor: '#555555',
       backgroundColor: '#1a1a2e',
       paddingLeft: 1,
+      paddingTop: 0,
     });
 
     this.rootBox.add(this.headerBox);
+    this.rootBox.add(this.stickyHeaderBox);
     this.rootBox.add(this.scrollBox);
     this.rootBox.add(this.footerBox);
 
     renderer.root.add(this.rootBox);
 
+    // Set up scroll tracking for sticky header
+    this.setupScrollTracking();
+
     this.buildUI();
   }
 
+  private setupScrollTracking(): void {
+    // Use a frame callback to check scroll position and update sticky header
+    let lastScrollTop = -1;
+    this.renderer.setFrameCallback(async () => {
+      const scrollTop = this.scrollBox.scrollTop;
+      if (scrollTop !== lastScrollTop) {
+        lastScrollTop = scrollTop;
+        this.updateStickyHeader(scrollTop);
+      }
+    });
+  }
+
+  private updateStickyHeader(scrollTop: number): void {
+    // Calculate content positions for each reasoning box
+    const contentChildren = this.scrollBox.content.getChildren();
+    let contentOffset = 0;
+
+    for (let i = 0; i < contentChildren.length; i++) {
+      const reasoningBox = contentChildren[i];
+      const item = this.itemRenderables.find(
+        (it) => it.type === 'reasoning' && it.renderable === reasoningBox
+      );
+
+      if (!item) {
+        contentOffset += reasoningBox.height;
+        continue;
+      }
+
+      const boxTop = contentOffset;
+      const boxHeight = reasoningBox.height;
+      const boxBottom = boxTop + boxHeight;
+
+      // Get the header box (first child of reasoning box)
+      const reasoningHeaderBox = reasoningBox.getChildren()[0];
+      if (!reasoningHeaderBox) {
+        contentOffset += boxHeight;
+        continue;
+      }
+
+      const reasoningHeaderHeight = reasoningHeaderBox.height || 2;
+
+      // Check if reasoning header should stick
+      if (scrollTop > boxTop && scrollTop < boxBottom - reasoningHeaderHeight) {
+        const offset = scrollTop - boxTop;
+        reasoningHeaderBox.translateY = offset;
+        reasoningHeaderBox.zIndex = 100;
+      } else {
+        reasoningHeaderBox.translateY = 0;
+        reasoningHeaderBox.zIndex = 0;
+      }
+
+      // Now check file headers within this reasoning
+      const reasoningChildren = reasoningBox.getChildren();
+      let fileOffset = reasoningHeaderHeight; // Start after reasoning header
+
+      for (let j = 1; j < reasoningChildren.length; j++) {
+        const fileBox = reasoningChildren[j];
+        const fileItem = this.itemRenderables.find(
+          (it) => it.type === 'file' && it.renderable === fileBox
+        );
+
+        if (!fileItem) {
+          fileOffset += fileBox.height;
+          continue;
+        }
+
+        const fileTop = boxTop + fileOffset;
+        const fileHeight = fileBox.height;
+        const fileBottom = fileTop + fileHeight;
+
+        // Get file header (first child of file box)
+        const fileHeaderBox = fileBox.getChildren()[0];
+        if (!fileHeaderBox) {
+          fileOffset += fileHeight;
+          continue;
+        }
+
+        const fileHeaderHeight = fileHeaderBox.height || 1;
+        // File header should stick below reasoning header
+        const stickyTop = reasoningHeaderHeight;
+
+        // If we've scrolled past the file header but not past the file content
+        if (scrollTop > fileTop - stickyTop && scrollTop < fileBottom - fileHeaderHeight - stickyTop) {
+          const offset = scrollTop - fileTop + stickyTop;
+          fileHeaderBox.translateY = offset;
+          fileHeaderBox.zIndex = 99;
+        } else {
+          fileHeaderBox.translateY = 0;
+          fileHeaderBox.zIndex = 0;
+        }
+
+        fileOffset += fileHeight;
+      }
+
+      contentOffset += boxHeight;
+    }
+
+    // Hide the separate sticky header box (not using it anymore)
+    this.stickyHeaderBox.visible = false;
+    this.stickyHeaderBox.height = 0;
+  }
+
   private buildUI(): void {
-    // Clear previous content
-    this.selectableItems = [];
+    // Pre-compute the list of selectable items FIRST (before rendering)
+    this.selectableItems = this.computeSelectableItems();
+    this.itemRenderables = [];
 
     // Clear scrollbox content
     const children = this.scrollBox.getChildren();
@@ -124,11 +249,29 @@ export class TreeView {
     // Build header
     this.buildHeader();
 
-    // Build content
+    // Build content (now selection checks work correctly)
     this.buildContent();
 
     // Build footer
     this.buildFooter();
+  }
+
+  private computeSelectableItems(): SelectableItem[] {
+    const items: SelectableItem[] = [];
+
+    this.state.reasoningGroups.forEach((group, reasoningIdx) => {
+      // Add reasoning item
+      items.push({ type: 'reasoning', reasoningIdx });
+
+      // If expanded, add file items
+      if (this.state.expandedReasonings.has(reasoningIdx)) {
+        group.files.forEach((file) => {
+          items.push({ type: 'file', reasoningIdx, filePath: file.path });
+        });
+      }
+    });
+
+    return items;
   }
 
   private buildHeader(): void {
@@ -152,6 +295,8 @@ export class TreeView {
     this.state.reasoningGroups.forEach((group, reasoningIdx) => {
       const isExpanded = this.state.expandedReasonings.has(reasoningIdx);
       const isSelected = this.isReasoningSelected(reasoningIdx);
+      // Highlight expanded reasoning blocks
+      const isHighlighted = isExpanded;
 
       // Reasoning container
       const reasoningBox = new BoxRenderable(this.renderer, {
@@ -159,7 +304,26 @@ export class TreeView {
         flexDirection: 'column',
         paddingLeft: 1,
         paddingTop: 1,
-        backgroundColor: isSelected ? '#2a2a4e' : undefined,
+        backgroundColor: isHighlighted ? '#1a1a3e' : undefined,
+      });
+
+      // Clickable reasoning header box (with background for sticky behavior)
+      const defaultBg = isHighlighted ? '#2a2a4e' : '#0f0f1a';
+      const hoverBg = '#3a3a5e';
+      // Use hover-style background for keyboard selection
+      const effectiveBg = isSelected ? hoverBg : defaultBg;
+      const reasoningHeaderBox = new BoxRenderable(this.renderer, {
+        width: '100%',
+        backgroundColor: effectiveBg,
+        onMouseOver: function() {
+          this.backgroundColor = hoverBg;
+        },
+        onMouseOut: function() {
+          this.backgroundColor = effectiveBg;
+        },
+        onMouseDown: () => {
+          this.toggleReasoningByIndex(reasoningIdx);
+        },
       });
 
       // Reasoning header with arrow and text
@@ -167,12 +331,13 @@ export class TreeView {
       const fileCount = group.files.length;
       const reasoningHeader = new TextRenderable(this.renderer, {
         content: `${arrow} ${group.reasoning} (${fileCount} file${fileCount !== 1 ? 's' : ''})`,
-        fg: isSelected ? '#ffffff' : '#cccccc',
+        fg: isHighlighted ? '#ffffff' : '#cccccc',
         width: '100%',
       });
-      reasoningBox.add(reasoningHeader);
+      reasoningHeaderBox.add(reasoningHeader);
+      reasoningBox.add(reasoningHeaderBox);
 
-      this.selectableItems.push({
+      this.itemRenderables.push({
         type: 'reasoning',
         reasoningIdx,
         renderable: reasoningBox,
@@ -191,18 +356,38 @@ export class TreeView {
             flexDirection: 'column',
             paddingLeft: 3,
             paddingTop: 1,
-            backgroundColor: isFileSelected ? '#2a2a4e' : undefined,
+          });
+
+          // Clickable file header box
+          const filePath = file.path;
+          const fileDefaultBg = '#0f0f1a';
+          const fileHoverBg = '#3a3a5e';
+          // Use hover-style background for keyboard selection
+          const fileEffectiveBg = isFileSelected ? fileHoverBg : fileDefaultBg;
+          const fileHeaderBox = new BoxRenderable(this.renderer, {
+            width: '100%',
+            backgroundColor: fileEffectiveBg,
+            onMouseOver: function() {
+              this.backgroundColor = fileHoverBg;
+            },
+            onMouseOut: function() {
+              this.backgroundColor = fileEffectiveBg;
+            },
+            onMouseDown: () => {
+              this.toggleFileByKey(reasoningIdx, filePath);
+            },
           });
 
           // File header
           const fileArrow = isFileExpanded ? '▼' : '▶';
           const fileHeader = new TextRenderable(this.renderer, {
             content: `${fileArrow} ${file.path}`,
-            fg: isFileSelected ? '#88ccff' : '#6699cc',
+            fg: '#6699cc',
           });
-          fileBox.add(fileHeader);
+          fileHeaderBox.add(fileHeader);
+          fileBox.add(fileHeaderBox);
 
-          this.selectableItems.push({
+          this.itemRenderables.push({
             type: 'file',
             reasoningIdx,
             filePath: file.path,
@@ -252,6 +437,54 @@ export class TreeView {
     });
   }
 
+  private toggleReasoningByIndex(reasoningIdx: number): void {
+    // Update selection to this reasoning
+    const itemIndex = this.selectableItems.findIndex(
+      (item) => item.type === 'reasoning' && item.reasoningIdx === reasoningIdx
+    );
+    if (itemIndex >= 0) {
+      this.state.selectedIndex = itemIndex;
+    }
+
+    if (this.state.expandedReasonings.has(reasoningIdx)) {
+      this.state.expandedReasonings.delete(reasoningIdx);
+      // Collapse all files in this reasoning
+      for (const key of this.state.expandedFiles) {
+        if (key.startsWith(`${reasoningIdx}|`)) {
+          this.state.expandedFiles.delete(key);
+        }
+      }
+    } else {
+      this.state.expandedReasonings.add(reasoningIdx);
+      // Auto-expand all files in this reasoning
+      const group = this.state.reasoningGroups[reasoningIdx];
+      if (group) {
+        for (const file of group.files) {
+          this.state.expandedFiles.add(`${reasoningIdx}|${file.path}`);
+        }
+      }
+    }
+    this.buildUI();
+  }
+
+  private toggleFileByKey(reasoningIdx: number, filePath: string): void {
+    // Update selection to this file
+    const itemIndex = this.selectableItems.findIndex(
+      (item) => item.type === 'file' && item.reasoningIdx === reasoningIdx && item.filePath === filePath
+    );
+    if (itemIndex >= 0) {
+      this.state.selectedIndex = itemIndex;
+    }
+
+    const fileKey = `${reasoningIdx}|${filePath}`;
+    if (this.state.expandedFiles.has(fileKey)) {
+      this.state.expandedFiles.delete(fileKey);
+    } else {
+      this.state.expandedFiles.add(fileKey);
+    }
+    this.buildUI();
+  }
+
   private buildFooter(): void {
     // Clear footer
     const footerChildren = this.footerBox.getChildren();
@@ -263,20 +496,20 @@ export class TreeView {
     const currentPos = this.state.selectedIndex + 1;
 
     const footerText = new TextRenderable(this.renderer, {
-      content: `j/k: navigate │ Enter: expand/collapse │ q: quit          [${currentPos}/${totalItems}]`,
+      content: `j/k: navigate │ Enter/click: expand │ q: quit          [${currentPos}/${totalItems}]`,
       fg: '#888888',
     });
     this.footerBox.add(footerText);
   }
 
   private isReasoningSelected(reasoningIdx: number): boolean {
-    const item = this.selectableItems[this.state.selectedIndex];
-    return item?.type === 'reasoning' && item.reasoningIdx === reasoningIdx;
+    const selectedItem = this.selectableItems[this.state.selectedIndex];
+    return selectedItem?.type === 'reasoning' && selectedItem.reasoningIdx === reasoningIdx;
   }
 
   private isFileSelected(reasoningIdx: number, filePath: string): boolean {
-    const item = this.selectableItems[this.state.selectedIndex];
-    return item?.type === 'file' && item.reasoningIdx === reasoningIdx && item.filePath === filePath;
+    const selectedItem = this.selectableItems[this.state.selectedIndex];
+    return selectedItem?.type === 'file' && selectedItem.reasoningIdx === reasoningIdx && selectedItem.filePath === filePath;
   }
 
   public getItemCount(): number {
@@ -284,23 +517,30 @@ export class TreeView {
   }
 
   public toggleExpand(): void {
-    const item = this.selectableItems[this.state.selectedIndex];
-    if (!item) return;
+    const selectedItem = this.selectableItems[this.state.selectedIndex];
+    if (!selectedItem) return;
 
-    if (item.type === 'reasoning') {
-      if (this.state.expandedReasonings.has(item.reasoningIdx)) {
-        this.state.expandedReasonings.delete(item.reasoningIdx);
+    if (selectedItem.type === 'reasoning') {
+      if (this.state.expandedReasonings.has(selectedItem.reasoningIdx)) {
+        this.state.expandedReasonings.delete(selectedItem.reasoningIdx);
         // Collapse all files in this reasoning
         for (const key of this.state.expandedFiles) {
-          if (key.startsWith(`${item.reasoningIdx}|`)) {
+          if (key.startsWith(`${selectedItem.reasoningIdx}|`)) {
             this.state.expandedFiles.delete(key);
           }
         }
       } else {
-        this.state.expandedReasonings.add(item.reasoningIdx);
+        this.state.expandedReasonings.add(selectedItem.reasoningIdx);
+        // Auto-expand all files in this reasoning
+        const group = this.state.reasoningGroups[selectedItem.reasoningIdx];
+        if (group) {
+          for (const file of group.files) {
+            this.state.expandedFiles.add(`${selectedItem.reasoningIdx}|${file.path}`);
+          }
+        }
       }
-    } else if (item.type === 'file' && item.filePath) {
-      const fileKey = `${item.reasoningIdx}|${item.filePath}`;
+    } else if (selectedItem.type === 'file' && selectedItem.filePath) {
+      const fileKey = `${selectedItem.reasoningIdx}|${selectedItem.filePath}`;
       if (this.state.expandedFiles.has(fileKey)) {
         this.state.expandedFiles.delete(fileKey);
       } else {

@@ -70,17 +70,17 @@ export async function visualizeCommand(options: VisualizeOptions): Promise<void>
         break;
 
       case 'j':
-      case 'ArrowDown':
+      case 'down':
         treeView.moveSelection(1);
         break;
 
       case 'k':
-      case 'ArrowUp':
+      case 'up':
         treeView.moveSelection(-1);
         break;
 
-      case 'Enter':
-      case ' ':
+      case 'return':
+      case 'space':
         treeView.toggleExpand();
         break;
 
