@@ -1,79 +1,12 @@
 import pc from 'picocolors';
-import { getCurrentBranch, getCommitList, isGitRepo } from '../utils/git';
-import { loadTrackingFiles, getTrackedCommits, aggregateByReasoning } from '../utils/tracking';
-import {
-  createAppState,
-  clearScreen,
-  hideCursor,
-  cleanupInput,
-  setupKeyboardInput,
-  type AppState,
-} from '../tui/app';
-import { renderView, getItemCount, toggleExpand } from '../tui/tree-view';
+import { createCliRenderer } from '@opentui/core';
+import { getCurrentBranch, getCommitList, isGitRepo } from '../utils/git.js';
+import { loadTrackingFiles, getTrackedCommits, aggregateByReasoning } from '../utils/tracking.js';
+import { createAppState } from '../tui/app.js';
+import { TreeView } from '../tui/tree-view.js';
 
 export interface VisualizeOptions {
   cwd: string;
-}
-
-function render(state: AppState): void {
-  clearScreen();
-
-  const lines = renderView(state);
-  for (const line of lines) {
-    console.log(line);
-  }
-}
-
-function handleKeyPress(state: AppState, key: string): boolean {
-  const itemCount = getItemCount(state);
-
-  switch (key) {
-    case 'q':
-      return false; // Signal exit
-
-    case 'j':
-    case 'down':
-      if (state.selectedIndex < itemCount - 1) {
-        state.selectedIndex++;
-        // Adjust scroll if needed
-        const visibleHeight = (process.stdout.rows || 24) - 6;
-        if (state.selectedIndex >= state.scrollOffset + visibleHeight) {
-          state.scrollOffset = state.selectedIndex - visibleHeight + 1;
-        }
-      }
-      break;
-
-    case 'k':
-    case 'up':
-      if (state.selectedIndex > 0) {
-        state.selectedIndex--;
-        // Adjust scroll if needed
-        if (state.selectedIndex < state.scrollOffset) {
-          state.scrollOffset = state.selectedIndex;
-        }
-      }
-      break;
-
-    case 'return':
-    case 'space':
-      toggleExpand(state);
-      break;
-
-    case 'g':
-      // Go to top
-      state.selectedIndex = 0;
-      state.scrollOffset = 0;
-      break;
-
-    case 'G':
-      // Go to bottom
-      state.selectedIndex = Math.max(0, itemCount - 1);
-      const visibleHeight = (process.stdout.rows || 24) - 6;
-      state.scrollOffset = Math.max(0, itemCount - visibleHeight);
-      break;
-  }
-
-  return true; // Continue running
 }
 
 export async function visualizeCommand(options: VisualizeOptions): Promise<void> {
@@ -109,39 +42,62 @@ export async function visualizeCommand(options: VisualizeOptions): Promise<void>
     return;
   }
 
+  // Create OpenTUI renderer
+  console.log(pc.dim('Starting visualizer...'));
+
+  const renderer = await createCliRenderer({
+    exitOnCtrlC: true,
+    useAlternateScreen: true,
+    useMouse: true,
+    backgroundColor: '#0f0f1a',
+  });
+
   // Create app state
   const state = createAppState(branch, reasoningGroups);
 
-  // Setup terminal
-  hideCursor();
+  // Create tree view
+  const treeView = new TreeView(renderer, state);
 
-  let running = true;
+  // Handle keyboard input
+  renderer.keyInput.on('keypress', (event) => {
+    const key = event.name;
 
-  const cleanup = () => {
-    running = false;
-    cleanupInput();
-    clearScreen();
-    console.log(pc.dim('Goodbye!'));
-    process.exit(0);
-  };
+    switch (key) {
+      case 'q':
+        treeView.destroy();
+        renderer.destroy();
+        process.exit(0);
+        break;
 
-  // Handle resize
-  process.stdout.on('resize', () => {
-    if (running) render(state);
+      case 'j':
+      case 'ArrowDown':
+        treeView.moveSelection(1);
+        break;
+
+      case 'k':
+      case 'ArrowUp':
+        treeView.moveSelection(-1);
+        break;
+
+      case 'Enter':
+      case ' ':
+        treeView.toggleExpand();
+        break;
+
+      case 'g':
+        // Go to top
+        state.selectedIndex = 0;
+        treeView.refresh();
+        break;
+
+      case 'G':
+        // Go to bottom
+        state.selectedIndex = Math.max(0, treeView.getItemCount() - 1);
+        treeView.refresh();
+        break;
+    }
   });
 
-  // Setup keyboard input
-  setupKeyboardInput(
-    (key) => {
-      if (!handleKeyPress(state, key)) {
-        cleanup();
-        return;
-      }
-      render(state);
-    },
-    cleanup
-  );
-
-  // Initial render
-  render(state);
+  // Start rendering
+  renderer.start();
 }

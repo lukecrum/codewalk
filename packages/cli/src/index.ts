@@ -1,7 +1,7 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { Command } from 'commander';
-import { initCommand } from './commands/init';
-import { visualizeCommand } from './commands/visualize';
+import { initCommand } from './commands/init.js';
+import { visualizeCommand } from './commands/visualize.js';
 
 const program = new Command();
 

@@ -1,2 +1,2 @@
-#!/usr/bin/env node
-require('../dist/index.js');
+#!/usr/bin/env bun
+import '../dist/index.js';

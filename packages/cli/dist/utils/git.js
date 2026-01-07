@@ -1,17 +1,7 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCurrentBranch = getCurrentBranch;
-exports.getCommitList = getCommitList;
-exports.isGitRepo = isGitRepo;
-exports.getMainBranch = getMainBranch;
-exports.getMergeBase = getMergeBase;
-exports.getCommitDiff = getCommitDiff;
-exports.parseDiffIntoFiles = parseDiffIntoFiles;
-exports.getCommitFileDiffs = getCommitFileDiffs;
-const child_process_1 = require("child_process");
-function getCurrentBranch(cwd) {
+import { execSync } from 'child_process';
+export function getCurrentBranch(cwd) {
     try {
-        return (0, child_process_1.execSync)('git rev-parse --abbrev-ref HEAD', {
+        return execSync('git rev-parse --abbrev-ref HEAD', {
             cwd,
             encoding: 'utf-8',
         }).trim();
@@ -20,9 +10,9 @@ function getCurrentBranch(cwd) {
         throw new Error('Not a git repository or git is not installed');
     }
 }
-function getCommitList(cwd) {
+export function getCommitList(cwd) {
     try {
-        const output = (0, child_process_1.execSync)('git log --format="%H|%h|%an|%s" --first-parent', {
+        const output = execSync('git log --format="%H|%h|%an|%s" --first-parent', {
             cwd,
             encoding: 'utf-8',
         });
@@ -44,19 +34,19 @@ function getCommitList(cwd) {
         throw new Error('Failed to get commit list');
     }
 }
-function isGitRepo(cwd) {
+export function isGitRepo(cwd) {
     try {
-        (0, child_process_1.execSync)('git rev-parse --git-dir', { cwd, encoding: 'utf-8' });
+        execSync('git rev-parse --git-dir', { cwd, encoding: 'utf-8' });
         return true;
     }
     catch {
         return false;
     }
 }
-function getMainBranch(cwd) {
+export function getMainBranch(cwd) {
     try {
         // Try to get the default branch from origin
-        const result = (0, child_process_1.execSync)('git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null || echo "refs/heads/main"', {
+        const result = execSync('git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null || echo "refs/heads/main"', {
             cwd,
             encoding: 'utf-8',
         }).trim();
@@ -66,9 +56,9 @@ function getMainBranch(cwd) {
         return 'main';
     }
 }
-function getMergeBase(cwd, branch1, branch2) {
+export function getMergeBase(cwd, branch1, branch2) {
     try {
-        return (0, child_process_1.execSync)(`git merge-base ${branch1} ${branch2}`, {
+        return execSync(`git merge-base ${branch1} ${branch2}`, {
             cwd,
             encoding: 'utf-8',
         }).trim();
@@ -77,9 +67,9 @@ function getMergeBase(cwd, branch1, branch2) {
         throw new Error(`Failed to find merge base between ${branch1} and ${branch2}`);
     }
 }
-function getCommitDiff(cwd, commitSha) {
+export function getCommitDiff(cwd, commitSha) {
     try {
-        return (0, child_process_1.execSync)(`git show ${commitSha} --format="" --patch`, {
+        return execSync(`git show ${commitSha} --format="" --patch`, {
             cwd,
             encoding: 'utf-8',
             maxBuffer: 10 * 1024 * 1024, // 10MB buffer for large diffs
@@ -89,7 +79,7 @@ function getCommitDiff(cwd, commitSha) {
         return '';
     }
 }
-function parseDiffIntoFiles(diffOutput) {
+export function parseDiffIntoFiles(diffOutput) {
     const files = [];
     // Split by file headers (diff --git a/... b/...)
     const fileChunks = diffOutput.split(/^diff --git /m).filter(Boolean);
@@ -136,7 +126,7 @@ function parseDiffIntoFiles(diffOutput) {
     }
     return files;
 }
-function getCommitFileDiffs(cwd, commitSha) {
+export function getCommitFileDiffs(cwd, commitSha) {
     const diffOutput = getCommitDiff(cwd, commitSha);
     return parseDiffIntoFiles(diffOutput);
 }

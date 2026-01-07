@@ -1,8 +1,8 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import type { Changeset } from '../types/codewalker';
-import type { CommitInfo, FileDiff, ParsedHunk } from './git';
-import { getCommitFileDiffs } from './git';
+import type { Changeset } from '../types/codewalker.js';
+import type { CommitInfo, FileDiff, ParsedHunk } from './git.js';
+import { getCommitFileDiffs } from './git.js';
 
 export interface TrackedCommit {
   commit: CommitInfo;

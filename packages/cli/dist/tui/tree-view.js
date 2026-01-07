@@ -1,184 +1,274 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.buildRenderLines = buildRenderLines;
-exports.getSelectableLines = getSelectableLines;
-exports.renderView = renderView;
-exports.getItemCount = getItemCount;
-exports.getItemIdAtIndex = getItemIdAtIndex;
-exports.toggleExpand = toggleExpand;
-const picocolors_1 = __importDefault(require("picocolors"));
-const app_1 = require("./app");
-function formatDiffLine(line, cols) {
-    const truncatedLine = line.length > cols - 6 ? line.slice(0, cols - 9) + '...' : line;
-    if (line.startsWith('+') && !line.startsWith('+++')) {
-        return picocolors_1.default.green(truncatedLine);
-    }
-    else if (line.startsWith('-') && !line.startsWith('---')) {
-        return picocolors_1.default.red(truncatedLine);
-    }
-    else if (line.startsWith('@@')) {
-        return picocolors_1.default.cyan(truncatedLine);
-    }
-    return picocolors_1.default.dim(truncatedLine);
-}
-function renderHunks(hunks, cols) {
-    const lines = [];
+import { BoxRenderable, TextRenderable, ScrollBoxRenderable, DiffRenderable, } from '@opentui/core';
+// Convert hunks to unified diff format for DiffRenderable
+function hunksToUnifiedDiff(filePath, hunks) {
+    let diff = `--- a/${filePath}\n+++ b/${filePath}\n`;
     for (const hunk of hunks) {
-        // Hunk header
-        lines.push('      ' + picocolors_1.default.cyan(picocolors_1.default.bold(hunk.header)));
-        // Hunk content
-        const contentLines = hunk.content.split('\n').filter(Boolean);
-        for (const line of contentLines) {
-            lines.push('      ' + formatDiffLine(line, cols));
-        }
-        lines.push(''); // Empty line between hunks
+        diff += hunk.header + '\n';
+        diff += hunk.content;
     }
-    return lines;
+    return diff;
 }
-function buildRenderLines(state) {
-    const lines = [];
-    state.reasoningGroups.forEach((group, reasoningIdx) => {
-        const isReasoningExpanded = state.expandedReasonings.has(reasoningIdx);
-        // Reasoning line
-        lines.push({
-            id: `r-${reasoningIdx}`,
-            type: 'reasoning',
-            depth: 0,
-            content: group.reasoning,
-            isExpandable: true,
-            isExpanded: isReasoningExpanded,
+// Get file extension for syntax highlighting
+function getFileType(filePath) {
+    const ext = filePath.split('.').pop()?.toLowerCase();
+    const typeMap = {
+        ts: 'typescript',
+        tsx: 'tsx',
+        js: 'javascript',
+        jsx: 'jsx',
+        py: 'python',
+        rb: 'ruby',
+        go: 'go',
+        rs: 'rust',
+        java: 'java',
+        c: 'c',
+        cpp: 'cpp',
+        h: 'c',
+        hpp: 'cpp',
+        css: 'css',
+        scss: 'scss',
+        html: 'html',
+        json: 'json',
+        md: 'markdown',
+        yaml: 'yaml',
+        yml: 'yaml',
+    };
+    return ext ? typeMap[ext] : undefined;
+}
+export class TreeView {
+    renderer;
+    state;
+    rootBox;
+    headerBox;
+    scrollBox;
+    footerBox;
+    selectableItems = [];
+    constructor(renderer, state) {
+        this.renderer = renderer;
+        this.state = state;
+        // Root container - full screen, vertical flex
+        this.rootBox = new BoxRenderable(renderer, {
+            width: '100%',
+            height: '100%',
+            flexDirection: 'column',
         });
-        if (isReasoningExpanded) {
-            // File lines
-            group.files.forEach((file) => {
-                const fileKey = `${reasoningIdx}|${file.path}`;
-                const isFileExpanded = state.expandedFiles.has(fileKey);
-                lines.push({
-                    id: `f-${fileKey}`,
-                    type: 'file',
-                    depth: 1,
-                    content: file.path,
-                    isExpandable: true,
-                    isExpanded: isFileExpanded,
-                });
-                if (isFileExpanded) {
-                    // Add diff content as non-selectable lines
-                    lines.push({
-                        id: `d-${fileKey}`,
-                        type: 'diff',
-                        depth: 2,
-                        content: JSON.stringify(file.hunks), // Will be rendered specially
-                        isExpandable: false,
-                        isExpanded: false,
-                    });
-                }
+        // Header - fixed at top
+        this.headerBox = new BoxRenderable(renderer, {
+            width: '100%',
+            height: 3,
+            border: true,
+            borderStyle: 'single',
+            borderColor: '#555555',
+            backgroundColor: '#1a1a2e',
+        });
+        // Scrollable content area
+        this.scrollBox = new ScrollBoxRenderable(renderer, {
+            width: '100%',
+            flexGrow: 1,
+            scrollY: true,
+            backgroundColor: '#0f0f1a',
+        });
+        // Footer - fixed at bottom
+        this.footerBox = new BoxRenderable(renderer, {
+            width: '100%',
+            height: 2,
+            border: true,
+            borderStyle: 'single',
+            borderColor: '#555555',
+            backgroundColor: '#1a1a2e',
+            paddingLeft: 1,
+        });
+        this.rootBox.add(this.headerBox);
+        this.rootBox.add(this.scrollBox);
+        this.rootBox.add(this.footerBox);
+        renderer.root.add(this.rootBox);
+        this.buildUI();
+    }
+    buildUI() {
+        // Clear previous content
+        this.selectableItems = [];
+        // Clear scrollbox content
+        const children = this.scrollBox.getChildren();
+        for (const child of children) {
+            this.scrollBox.remove(child.id);
+        }
+        // Build header
+        this.buildHeader();
+        // Build content
+        this.buildContent();
+        // Build footer
+        this.buildFooter();
+    }
+    buildHeader() {
+        // Clear header
+        const headerChildren = this.headerBox.getChildren();
+        for (const child of headerChildren) {
+            this.headerBox.remove(child.id);
+        }
+        const totalChanges = this.state.reasoningGroups.length;
+        const headerText = new TextRenderable(this.renderer, {
+            content: ` CodeWalker - ${this.state.branch} (${totalChanges} logical changes)`,
+            fg: '#88ccff',
+            paddingTop: 0,
+            paddingLeft: 1,
+        });
+        this.headerBox.add(headerText);
+    }
+    buildContent() {
+        this.state.reasoningGroups.forEach((group, reasoningIdx) => {
+            const isExpanded = this.state.expandedReasonings.has(reasoningIdx);
+            const isSelected = this.isReasoningSelected(reasoningIdx);
+            // Reasoning container
+            const reasoningBox = new BoxRenderable(this.renderer, {
+                width: '100%',
+                flexDirection: 'column',
+                paddingLeft: 1,
+                paddingTop: 1,
+                backgroundColor: isSelected ? '#2a2a4e' : undefined,
             });
-        }
-    });
-    return lines;
-}
-function getSelectableLines(state) {
-    return buildRenderLines(state).filter((line) => line.type !== 'diff');
-}
-function renderView(state) {
-    const { cols, rows } = (0, app_1.getTerminalSize)();
-    const output = [];
-    // Header
-    const totalChanges = state.reasoningGroups.length;
-    const header = ` CodeWalker - ${picocolors_1.default.cyan(state.branch)} (${totalChanges} logical changes)`;
-    output.push(picocolors_1.default.bold(header));
-    output.push(picocolors_1.default.dim('─'.repeat(cols)));
-    // Build all render lines
-    const allLines = buildRenderLines(state);
-    const selectableLines = allLines.filter((line) => line.type !== 'diff');
-    // Calculate content height
-    const contentHeight = rows - 4; // header, separator, footer
-    // Build the visual output
-    const visualLines = [];
-    let selectableIndex = 0;
-    for (const line of allLines) {
-        if (line.type === 'diff') {
-            // Render diff content
-            const hunks = JSON.parse(line.content);
-            const diffLines = renderHunks(hunks, cols);
-            visualLines.push(...diffLines);
-        }
-        else {
-            // Render reasoning or file line
-            const isSelected = selectableIndex === state.selectedIndex;
-            const indent = '  '.repeat(line.depth);
-            const prefix = line.isExpandable
-                ? (line.isExpanded ? '▼ ' : '▶ ')
-                : '  ';
-            let label = (0, app_1.truncate)(line.content, cols - indent.length - prefix.length - 4);
-            if (line.type === 'reasoning') {
-                // Count files in this reasoning
-                const reasoningIdx = parseInt(line.id.split('-')[1]);
-                const fileCount = state.reasoningGroups[reasoningIdx].files.length;
-                label = `${label} ${picocolors_1.default.dim(`(${fileCount} files)`)}`;
+            // Reasoning header with arrow and text
+            const arrow = isExpanded ? '▼' : '▶';
+            const fileCount = group.files.length;
+            const reasoningHeader = new TextRenderable(this.renderer, {
+                content: `${arrow} ${group.reasoning} (${fileCount} file${fileCount !== 1 ? 's' : ''})`,
+                fg: isSelected ? '#ffffff' : '#cccccc',
+                width: '100%',
+            });
+            reasoningBox.add(reasoningHeader);
+            this.selectableItems.push({
+                type: 'reasoning',
+                reasoningIdx,
+                renderable: reasoningBox,
+            });
+            // If expanded, show files
+            if (isExpanded) {
+                group.files.forEach((file) => {
+                    const fileKey = `${reasoningIdx}|${file.path}`;
+                    const isFileExpanded = this.state.expandedFiles.has(fileKey);
+                    const isFileSelected = this.isFileSelected(reasoningIdx, file.path);
+                    // File container
+                    const fileBox = new BoxRenderable(this.renderer, {
+                        width: '100%',
+                        flexDirection: 'column',
+                        paddingLeft: 3,
+                        paddingTop: 1,
+                        backgroundColor: isFileSelected ? '#2a2a4e' : undefined,
+                    });
+                    // File header
+                    const fileArrow = isFileExpanded ? '▼' : '▶';
+                    const fileHeader = new TextRenderable(this.renderer, {
+                        content: `${fileArrow} ${file.path}`,
+                        fg: isFileSelected ? '#88ccff' : '#6699cc',
+                    });
+                    fileBox.add(fileHeader);
+                    this.selectableItems.push({
+                        type: 'file',
+                        reasoningIdx,
+                        filePath: file.path,
+                        renderable: fileBox,
+                    });
+                    // If file is expanded, show diff
+                    if (isFileExpanded && file.hunks.length > 0) {
+                        const diffContent = hunksToUnifiedDiff(file.path, file.hunks);
+                        const fileType = getFileType(file.path);
+                        const diffBox = new BoxRenderable(this.renderer, {
+                            width: '100%',
+                            border: true,
+                            borderStyle: 'single',
+                            borderColor: '#444444',
+                            title: file.path,
+                            titleAlignment: 'left',
+                            marginLeft: 2,
+                            marginTop: 1,
+                            marginBottom: 1,
+                        });
+                        const diffRenderable = new DiffRenderable(this.renderer, {
+                            diff: diffContent,
+                            view: 'unified',
+                            showLineNumbers: true,
+                            filetype: fileType,
+                            addedBg: '#1a3d1a',
+                            removedBg: '#3d1a1a',
+                            contextBg: '#1a1a2e',
+                            addedSignColor: '#22cc22',
+                            removedSignColor: '#cc2222',
+                            lineNumberFg: '#666666',
+                            width: '100%',
+                        });
+                        diffBox.add(diffRenderable);
+                        fileBox.add(diffBox);
+                    }
+                    reasoningBox.add(fileBox);
+                });
             }
-            else if (line.type === 'file') {
-                label = picocolors_1.default.blue(label);
-            }
-            const fullLine = indent + prefix + label;
-            if (isSelected) {
-                visualLines.push(picocolors_1.default.inverse(fullLine.padEnd(cols)));
+            this.scrollBox.add(reasoningBox);
+        });
+    }
+    buildFooter() {
+        // Clear footer
+        const footerChildren = this.footerBox.getChildren();
+        for (const child of footerChildren) {
+            this.footerBox.remove(child.id);
+        }
+        const totalItems = this.selectableItems.length;
+        const currentPos = this.state.selectedIndex + 1;
+        const footerText = new TextRenderable(this.renderer, {
+            content: `j/k: navigate │ Enter: expand/collapse │ q: quit          [${currentPos}/${totalItems}]`,
+            fg: '#888888',
+        });
+        this.footerBox.add(footerText);
+    }
+    isReasoningSelected(reasoningIdx) {
+        const item = this.selectableItems[this.state.selectedIndex];
+        return item?.type === 'reasoning' && item.reasoningIdx === reasoningIdx;
+    }
+    isFileSelected(reasoningIdx, filePath) {
+        const item = this.selectableItems[this.state.selectedIndex];
+        return item?.type === 'file' && item.reasoningIdx === reasoningIdx && item.filePath === filePath;
+    }
+    getItemCount() {
+        return this.selectableItems.length;
+    }
+    toggleExpand() {
+        const item = this.selectableItems[this.state.selectedIndex];
+        if (!item)
+            return;
+        if (item.type === 'reasoning') {
+            if (this.state.expandedReasonings.has(item.reasoningIdx)) {
+                this.state.expandedReasonings.delete(item.reasoningIdx);
+                // Collapse all files in this reasoning
+                for (const key of this.state.expandedFiles) {
+                    if (key.startsWith(`${item.reasoningIdx}|`)) {
+                        this.state.expandedFiles.delete(key);
+                    }
+                }
             }
             else {
-                visualLines.push(fullLine);
-            }
-            selectableIndex++;
-        }
-    }
-    // Apply scrolling
-    const visibleLines = visualLines.slice(state.scrollOffset, state.scrollOffset + contentHeight);
-    output.push(...visibleLines);
-    // Pad if needed
-    while (output.length < rows - 2) {
-        output.push('');
-    }
-    // Footer
-    output.push(picocolors_1.default.dim('─'.repeat(cols)));
-    output.push(picocolors_1.default.dim(' j/k: navigate │ Enter: expand/collapse │ q: quit'));
-    return output;
-}
-function getItemCount(state) {
-    return getSelectableLines(state).length;
-}
-function getItemIdAtIndex(state, index) {
-    const lines = getSelectableLines(state);
-    return lines[index]?.id || null;
-}
-function toggleExpand(state) {
-    const lines = getSelectableLines(state);
-    const line = lines[state.selectedIndex];
-    if (!line || !line.isExpandable)
-        return;
-    if (line.type === 'reasoning') {
-        const reasoningIdx = parseInt(line.id.split('-')[1]);
-        if (state.expandedReasonings.has(reasoningIdx)) {
-            state.expandedReasonings.delete(reasoningIdx);
-            // Also collapse all files in this reasoning
-            for (const key of state.expandedFiles) {
-                if (key.startsWith(`${reasoningIdx}|`)) {
-                    state.expandedFiles.delete(key);
-                }
+                this.state.expandedReasonings.add(item.reasoningIdx);
             }
         }
-        else {
-            state.expandedReasonings.add(reasoningIdx);
+        else if (item.type === 'file' && item.filePath) {
+            const fileKey = `${item.reasoningIdx}|${item.filePath}`;
+            if (this.state.expandedFiles.has(fileKey)) {
+                this.state.expandedFiles.delete(fileKey);
+            }
+            else {
+                this.state.expandedFiles.add(fileKey);
+            }
+        }
+        this.buildUI();
+    }
+    moveSelection(delta) {
+        const newIndex = this.state.selectedIndex + delta;
+        if (newIndex >= 0 && newIndex < this.selectableItems.length) {
+            this.state.selectedIndex = newIndex;
+            this.buildUI();
         }
     }
-    else if (line.type === 'file') {
-        const fileKey = line.id.replace('f-', '');
-        if (state.expandedFiles.has(fileKey)) {
-            state.expandedFiles.delete(fileKey);
-        }
-        else {
-            state.expandedFiles.add(fileKey);
-        }
+    refresh() {
+        this.buildUI();
+    }
+    destroy() {
+        this.renderer.root.remove(this.rootBox.id);
     }
 }

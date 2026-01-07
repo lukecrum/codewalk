@@ -1,45 +1,6 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.initCommand = initCommand;
-const fs = __importStar(require("fs/promises"));
-const path = __importStar(require("path"));
-const picocolors_1 = __importDefault(require("picocolors"));
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import pc from 'picocolors';
 const SKILL_TEMPLATE = `# Code Walker
 
 You are Code Walker, an AI programming assistant built on top of Claude Code.
@@ -149,9 +110,9 @@ async function fileExists(filePath) {
         return false;
     }
 }
-async function initCommand(options) {
+export async function initCommand(options) {
     const { cwd } = options;
-    console.log(picocolors_1.default.bold('Initializing CodeWalker...\n'));
+    console.log(pc.bold('Initializing CodeWalker...\n'));
     // 1. Create .claude/skills directory
     const skillsDir = path.join(cwd, '.claude', 'skills');
     await fs.mkdir(skillsDir, { recursive: true });
@@ -160,10 +121,10 @@ async function initCommand(options) {
     const skillExists = await fileExists(skillPath);
     if (!skillExists) {
         await fs.writeFile(skillPath, SKILL_TEMPLATE);
-        console.log(picocolors_1.default.green('✓') + ' Created .claude/skills/codewalker.md');
+        console.log(pc.green('✓') + ' Created .claude/skills/codewalker.md');
     }
     else {
-        console.log(picocolors_1.default.yellow('○') + ' .claude/skills/codewalker.md already exists, skipping');
+        console.log(pc.yellow('○') + ' .claude/skills/codewalker.md already exists, skipping');
     }
     // 3. Update CLAUDE.md (idempotent)
     const claudePath = path.join(cwd, 'CLAUDE.md');
@@ -179,24 +140,24 @@ async function initCommand(options) {
             ? claudeContent + '\n\n' + CLAUDE_MD_CONTENT
             : CLAUDE_MD_CONTENT;
         await fs.writeFile(claudePath, newContent);
-        console.log(picocolors_1.default.green('✓') + ' Updated CLAUDE.md with CodeWalker instructions');
+        console.log(pc.green('✓') + ' Updated CLAUDE.md with CodeWalker instructions');
     }
     else {
-        console.log(picocolors_1.default.yellow('○') + ' CLAUDE.md already references CodeWalker, skipping');
+        console.log(pc.yellow('○') + ' CLAUDE.md already references CodeWalker, skipping');
     }
     // 4. Create .codewalker directory
     const codewalkerDir = path.join(cwd, '.codewalker');
     const codewalkerExists = await fileExists(codewalkerDir);
     await fs.mkdir(codewalkerDir, { recursive: true });
     if (!codewalkerExists) {
-        console.log(picocolors_1.default.green('✓') + ' Created .codewalker/ directory');
+        console.log(pc.green('✓') + ' Created .codewalker/ directory');
     }
     else {
-        console.log(picocolors_1.default.yellow('○') + ' .codewalker/ directory already exists');
+        console.log(pc.yellow('○') + ' .codewalker/ directory already exists');
     }
-    console.log(picocolors_1.default.bold('\nCodeWalker initialized successfully!'));
+    console.log(pc.bold('\nCodeWalker initialized successfully!'));
     console.log('\nNext steps:');
     console.log('  1. Start Claude Code in this directory');
     console.log('  2. Make changes - Claude will automatically track them');
-    console.log('  3. Run ' + picocolors_1.default.cyan('codewalker visualize') + ' to browse changes');
+    console.log('  3. Run ' + pc.cyan('codewalker visualize') + ' to browse changes');
 }

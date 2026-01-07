@@ -1,5 +1,5 @@
-import type { Changeset } from '../types/codewalker';
-import type { CommitInfo, ParsedHunk } from './git';
+import type { Changeset } from '../types/codewalker.js';
+import type { CommitInfo, ParsedHunk } from './git.js';
 export interface TrackedCommit {
     commit: CommitInfo;
     tracking: Changeset | null;
