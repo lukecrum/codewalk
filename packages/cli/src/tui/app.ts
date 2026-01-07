@@ -1,28 +1,26 @@
 import * as readline from 'readline';
 import pc from 'picocolors';
-import type { TrackedCommit } from '../utils/tracking';
-
-export type ViewMode = 'tree' | 'table';
+import type { ReasoningGroup } from '../utils/tracking';
 
 export interface AppState {
   branch: string;
-  trackedCommits: TrackedCommit[];
-  viewMode: ViewMode;
+  reasoningGroups: ReasoningGroup[];
   selectedIndex: number;
-  expandedSet: Set<string>;
+  expandedReasonings: Set<number>;
+  expandedFiles: Set<string>; // "reasoningIndex|filePath"
   scrollOffset: number;
 }
 
 export function createAppState(
   branch: string,
-  trackedCommits: TrackedCommit[]
+  reasoningGroups: ReasoningGroup[]
 ): AppState {
   return {
     branch,
-    trackedCommits,
-    viewMode: 'tree',
+    reasoningGroups,
     selectedIndex: 0,
-    expandedSet: new Set(),
+    expandedReasonings: new Set(),
+    expandedFiles: new Set(),
     scrollOffset: 0,
   };
 }

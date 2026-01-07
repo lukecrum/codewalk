@@ -35,8 +35,10 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.loadTrackingFiles = loadTrackingFiles;
 exports.getTrackedCommits = getTrackedCommits;
+exports.aggregateByReasoning = aggregateByReasoning;
 const fs = __importStar(require("fs/promises"));
 const path = __importStar(require("path"));
+const git_1 = require("./git");
 async function loadTrackingFiles(cwd, commits) {
     const result = [];
     for (const commit of commits) {
@@ -55,4 +57,67 @@ async function loadTrackingFiles(cwd, commits) {
 }
 function getTrackedCommits(trackedCommits) {
     return trackedCommits.filter((tc) => tc.tracking !== null);
+}
+/**
+ * Aggregates all tracking data into reasoning groups with actual diff hunks.
+ * This is the "By Reasoning" view - grouping changes by their logical purpose.
+ */
+function aggregateByReasoning(cwd, trackedCommits) {
+    const reasoningMap = new Map();
+    // Build a map of commit SHA to file diffs for quick lookup
+    const commitDiffs = new Map();
+    for (const tc of trackedCommits) {
+        if (!tc.tracking)
+            continue;
+        // Get diffs for this commit (lazy load)
+        if (!commitDiffs.has(tc.commit.shortSha)) {
+            commitDiffs.set(tc.commit.shortSha, (0, git_1.getCommitFileDiffs)(cwd, tc.commit.shortSha));
+        }
+        const fileDiffs = commitDiffs.get(tc.commit.shortSha) || [];
+        for (const change of tc.tracking.changes) {
+            // Use reasoning as the key (could also include commit if you want per-commit grouping)
+            const key = change.reasoning;
+            if (!reasoningMap.has(key)) {
+                reasoningMap.set(key, {
+                    reasoning: change.reasoning,
+                    files: [],
+                });
+            }
+            const group = reasoningMap.get(key);
+            for (const fileChange of change.files) {
+                // Find the diff for this file
+                const fileDiff = fileDiffs.find((fd) => fd.path === fileChange.path);
+                if (!fileDiff)
+                    continue;
+                // Get only the hunks specified in the tracking file
+                const selectedHunks = fileChange.hunks
+                    .map((hunkNum) => fileDiff.hunks.find((h) => h.hunkNumber === hunkNum))
+                    .filter((h) => h != null);
+                if (selectedHunks.length === 0)
+                    continue;
+                // Check if this file is already in the group
+                const existingFile = group.files.find((f) => f.path === fileChange.path);
+                if (existingFile) {
+                    // Merge hunks (avoid duplicates)
+                    for (const hunk of selectedHunks) {
+                        if (!existingFile.hunks.find((h) => h.hunkNumber === hunk.hunkNumber)) {
+                            existingFile.hunks.push(hunk);
+                            existingFile.hunkNumbers.push(hunk.hunkNumber);
+                        }
+                    }
+                }
+                else {
+                    group.files.push({
+                        path: fileChange.path,
+                        hunks: selectedHunks,
+                        hunkNumbers: fileChange.hunks,
+                    });
+                }
+            }
+        }
+    }
+    // Convert map to array and sort by number of files (most impactful first)
+    return Array.from(reasoningMap.values())
+        .filter((group) => group.files.length > 0)
+        .sort((a, b) => b.files.length - a.files.length);
 }

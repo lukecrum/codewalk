@@ -9,29 +9,18 @@ const git_1 = require("../utils/git");
 const tracking_1 = require("../utils/tracking");
 const app_1 = require("../tui/app");
 const tree_view_1 = require("../tui/tree-view");
-const table_view_1 = require("../tui/table-view");
 function render(state) {
     (0, app_1.clearScreen)();
-    const lines = state.viewMode === 'tree' ? (0, tree_view_1.renderTreeView)(state) : (0, table_view_1.renderTableView)(state);
+    const lines = (0, tree_view_1.renderView)(state);
     for (const line of lines) {
         console.log(line);
     }
 }
-function getItemCount(state) {
-    return state.viewMode === 'tree'
-        ? (0, tree_view_1.getTreeNodeCount)(state)
-        : (0, table_view_1.getTableRowCount)(state);
-}
-function handleKeyPress(state, key, ctrl) {
-    const itemCount = getItemCount(state);
+function handleKeyPress(state, key) {
+    const itemCount = (0, tree_view_1.getItemCount)(state);
     switch (key) {
         case 'q':
             return false; // Signal exit
-        case 'tab':
-            state.viewMode = state.viewMode === 'tree' ? 'table' : 'tree';
-            state.selectedIndex = 0;
-            state.scrollOffset = 0;
-            break;
         case 'j':
         case 'down':
             if (state.selectedIndex < itemCount - 1) {
@@ -55,17 +44,7 @@ function handleKeyPress(state, key, ctrl) {
             break;
         case 'return':
         case 'space':
-            if (state.viewMode === 'tree') {
-                const nodeId = (0, tree_view_1.getNodeIdAtIndex)(state, state.selectedIndex);
-                if (nodeId) {
-                    if (state.expandedSet.has(nodeId)) {
-                        state.expandedSet.delete(nodeId);
-                    }
-                    else {
-                        state.expandedSet.add(nodeId);
-                    }
-                }
-            }
+            (0, tree_view_1.toggleExpand)(state);
             break;
         case 'g':
             // Go to top
@@ -77,16 +56,6 @@ function handleKeyPress(state, key, ctrl) {
             state.selectedIndex = Math.max(0, itemCount - 1);
             const visibleHeight = (process.stdout.rows || 24) - 6;
             state.scrollOffset = Math.max(0, itemCount - visibleHeight);
-            break;
-        case '1':
-            state.viewMode = 'tree';
-            state.selectedIndex = 0;
-            state.scrollOffset = 0;
-            break;
-        case '2':
-            state.viewMode = 'table';
-            state.selectedIndex = 0;
-            state.scrollOffset = 0;
             break;
     }
     return true; // Continue running
@@ -109,8 +78,15 @@ async function visualizeCommand(options) {
         console.log(picocolors_1.default.dim('Run some tasks with Claude Code to generate tracking data.'));
         return;
     }
+    console.log(picocolors_1.default.dim('Aggregating changes by reasoning...'));
+    // Aggregate changes by reasoning (like the PR "By Reasoning" view)
+    const reasoningGroups = (0, tracking_1.aggregateByReasoning)(cwd, trackedCommits);
+    if (reasoningGroups.length === 0) {
+        console.log(picocolors_1.default.yellow('No changes with diffs found.'));
+        return;
+    }
     // Create app state
-    const state = (0, app_1.createAppState)(branch, trackedCommits);
+    const state = (0, app_1.createAppState)(branch, reasoningGroups);
     // Setup terminal
     (0, app_1.hideCursor)();
     let running = true;
@@ -127,8 +103,8 @@ async function visualizeCommand(options) {
             render(state);
     });
     // Setup keyboard input
-    (0, app_1.setupKeyboardInput)((key, ctrl) => {
-        if (!handleKeyPress(state, key, ctrl)) {
+    (0, app_1.setupKeyboardInput)((key) => {
+        if (!handleKeyPress(state, key)) {
             cleanup();
             return;
         }

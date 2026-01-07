@@ -42,13 +42,13 @@ exports.setupKeyboardInput = setupKeyboardInput;
 exports.cleanupInput = cleanupInput;
 exports.truncate = truncate;
 const readline = __importStar(require("readline"));
-function createAppState(branch, trackedCommits) {
+function createAppState(branch, reasoningGroups) {
     return {
         branch,
-        trackedCommits,
-        viewMode: 'tree',
+        reasoningGroups,
         selectedIndex: 0,
-        expandedSet: new Set(),
+        expandedReasonings: new Set(),
+        expandedFiles: new Set(),
         scrollOffset: 0,
     };
 }

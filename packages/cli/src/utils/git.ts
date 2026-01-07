@@ -7,6 +7,17 @@ export interface CommitInfo {
   message: string;
 }
 
+export interface ParsedHunk {
+  hunkNumber: number;
+  header: string;
+  content: string;
+}
+
+export interface FileDiff {
+  path: string;
+  hunks: ParsedHunk[];
+}
+
 export function getCurrentBranch(cwd: string): string {
   try {
     return execSync('git rev-parse --abbrev-ref HEAD', {
@@ -35,7 +46,7 @@ export function getCommitList(cwd: string): CommitInfo[] {
           sha,
           shortSha,
           author,
-          message: messageParts.join('|'), // Handle messages with | in them
+          message: messageParts.join('|'),
         };
       });
   } catch {
@@ -50,4 +61,101 @@ export function isGitRepo(cwd: string): boolean {
   } catch {
     return false;
   }
+}
+
+export function getMainBranch(cwd: string): string {
+  try {
+    // Try to get the default branch from origin
+    const result = execSync('git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null || echo "refs/heads/main"', {
+      cwd,
+      encoding: 'utf-8',
+    }).trim();
+    return result.replace('refs/remotes/origin/', '').replace('refs/heads/', '');
+  } catch {
+    return 'main';
+  }
+}
+
+export function getMergeBase(cwd: string, branch1: string, branch2: string): string {
+  try {
+    return execSync(`git merge-base ${branch1} ${branch2}`, {
+      cwd,
+      encoding: 'utf-8',
+    }).trim();
+  } catch {
+    throw new Error(`Failed to find merge base between ${branch1} and ${branch2}`);
+  }
+}
+
+export function getCommitDiff(cwd: string, commitSha: string): string {
+  try {
+    return execSync(`git show ${commitSha} --format="" --patch`, {
+      cwd,
+      encoding: 'utf-8',
+      maxBuffer: 10 * 1024 * 1024, // 10MB buffer for large diffs
+    });
+  } catch {
+    return '';
+  }
+}
+
+export function parseDiffIntoFiles(diffOutput: string): FileDiff[] {
+  const files: FileDiff[] = [];
+
+  // Split by file headers (diff --git a/... b/...)
+  const fileChunks = diffOutput.split(/^diff --git /m).filter(Boolean);
+
+  for (const chunk of fileChunks) {
+    const lines = chunk.split('\n');
+
+    // Extract file path from the first line (a/path b/path)
+    const headerMatch = lines[0]?.match(/a\/(.+?) b\/(.+)/);
+    if (!headerMatch) continue;
+
+    const filePath = headerMatch[2];
+    const hunks: ParsedHunk[] = [];
+
+    let currentHunk: ParsedHunk | null = null;
+    let hunkNumber = 0;
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i];
+
+      // Start of a new hunk
+      if (line.startsWith('@@')) {
+        if (currentHunk) {
+          hunks.push(currentHunk);
+        }
+        hunkNumber++;
+        currentHunk = {
+          hunkNumber,
+          header: line,
+          content: '',
+        };
+      } else if (currentHunk) {
+        // Skip binary file markers and other metadata
+        if (line.startsWith('Binary files') || line.startsWith('index ') ||
+            line.startsWith('---') || line.startsWith('+++') ||
+            line.startsWith('new file') || line.startsWith('deleted file')) {
+          continue;
+        }
+        currentHunk.content += line + '\n';
+      }
+    }
+
+    if (currentHunk) {
+      hunks.push(currentHunk);
+    }
+
+    if (hunks.length > 0) {
+      files.push({ path: filePath, hunks });
+    }
+  }
+
+  return files;
+}
+
+export function getCommitFileDiffs(cwd: string, commitSha: string): FileDiff[] {
+  const diffOutput = getCommitDiff(cwd, commitSha);
+  return parseDiffIntoFiles(diffOutput);
 }

@@ -1,14 +1,13 @@
-import type { TrackedCommit } from '../utils/tracking';
-export type ViewMode = 'tree' | 'table';
+import type { ReasoningGroup } from '../utils/tracking';
 export interface AppState {
     branch: string;
-    trackedCommits: TrackedCommit[];
-    viewMode: ViewMode;
+    reasoningGroups: ReasoningGroup[];
     selectedIndex: number;
-    expandedSet: Set<string>;
+    expandedReasonings: Set<number>;
+    expandedFiles: Set<string>;
     scrollOffset: number;
 }
-export declare function createAppState(branch: string, trackedCommits: TrackedCommit[]): AppState;
+export declare function createAppState(branch: string, reasoningGroups: ReasoningGroup[]): AppState;
 export declare function clearScreen(): void;
 export declare function hideCursor(): void;
 export declare function showCursor(): void;

@@ -1,144 +1,213 @@
 import pc from 'picocolors';
 import type { AppState } from './app';
 import { truncate, getTerminalSize } from './app';
+import type { ParsedHunk } from '../utils/git';
 
-interface TreeNode {
+interface RenderLine {
   id: string;
+  type: 'reasoning' | 'file' | 'diff';
   depth: number;
-  label: string;
+  content: string;
+  isExpandable: boolean;
   isExpanded: boolean;
-  hasChildren: boolean;
-  type: 'commit' | 'change' | 'file';
 }
 
-export function buildTreeNodes(state: AppState): TreeNode[] {
-  const nodes: TreeNode[] = [];
+function formatDiffLine(line: string, cols: number): string {
+  const truncatedLine = line.length > cols - 6 ? line.slice(0, cols - 9) + '...' : line;
 
-  for (const tc of state.trackedCommits) {
-    if (!tc.tracking) continue;
-
-    const commitId = tc.commit.shortSha;
-    const isExpanded = state.expandedSet.has(commitId);
-
-    nodes.push({
-      id: commitId,
-      depth: 0,
-      label: `${tc.commit.shortSha} - ${tc.commit.message}`,
-      isExpanded,
-      hasChildren: tc.tracking.changes.length > 0,
-      type: 'commit',
-    });
-
-    if (isExpanded && tc.tracking) {
-      tc.tracking.changes.forEach((change, changeIdx) => {
-        const changeId = `${commitId}-${changeIdx}`;
-        const isChangeExpanded = state.expandedSet.has(changeId);
-
-        nodes.push({
-          id: changeId,
-          depth: 1,
-          label: change.reasoning,
-          isExpanded: isChangeExpanded,
-          hasChildren: change.files.length > 0,
-          type: 'change',
-        });
-
-        if (isChangeExpanded) {
-          change.files.forEach((file, fileIdx) => {
-            nodes.push({
-              id: `${changeId}-${fileIdx}`,
-              depth: 2,
-              label: `${file.path} (hunks: ${file.hunks.join(', ')})`,
-              isExpanded: false,
-              hasChildren: false,
-              type: 'file',
-            });
-          });
-        }
-      });
-    }
+  if (line.startsWith('+') && !line.startsWith('+++')) {
+    return pc.green(truncatedLine);
+  } else if (line.startsWith('-') && !line.startsWith('---')) {
+    return pc.red(truncatedLine);
+  } else if (line.startsWith('@@')) {
+    return pc.cyan(truncatedLine);
   }
-
-  return nodes;
+  return pc.dim(truncatedLine);
 }
 
-export function renderTreeView(state: AppState): string[] {
-  const { cols, rows } = getTerminalSize();
+function renderHunks(hunks: ParsedHunk[], cols: number): string[] {
   const lines: string[] = [];
-  const nodes = buildTreeNodes(state);
 
-  // Header
-  const trackedCount = state.trackedCommits.filter((tc) => tc.tracking).length;
-  const header = ` CodeWalker - ${pc.cyan(state.branch)} (${trackedCount} commits tracked)`;
-  const viewIndicator = pc.bgBlue(pc.white(' Tree ')) + pc.dim(' Table ');
-  const headerLine = header.padEnd(cols - 15) + viewIndicator;
-  lines.push(pc.bold(headerLine));
-  lines.push(pc.dim('─'.repeat(cols)));
+  for (const hunk of hunks) {
+    // Hunk header
+    lines.push('      ' + pc.cyan(pc.bold(hunk.header)));
 
-  // Content area height
-  const contentHeight = rows - 5; // header, separator, footer, padding
-
-  // Apply scroll offset
-  const visibleNodes = nodes.slice(
-    state.scrollOffset,
-    state.scrollOffset + contentHeight
-  );
-
-  for (let i = 0; i < visibleNodes.length; i++) {
-    const node = visibleNodes[i];
-    const absoluteIndex = state.scrollOffset + i;
-    const isSelected = absoluteIndex === state.selectedIndex;
-
-    let prefix = '';
-    let indent = '  '.repeat(node.depth);
-
-    if (node.hasChildren) {
-      prefix = node.isExpanded ? '▼ ' : '▶ ';
-    } else {
-      prefix = node.depth > 0 ? '├─ ' : '  ';
+    // Hunk content
+    const contentLines = hunk.content.split('\n').filter(Boolean);
+    for (const line of contentLines) {
+      lines.push('      ' + formatDiffLine(line, cols));
     }
 
-    let label = truncate(node.label, cols - indent.length - prefix.length - 4);
-
-    // Apply styling based on type
-    if (node.type === 'commit') {
-      const [hash, ...rest] = label.split(' - ');
-      label = pc.yellow(hash) + ' - ' + rest.join(' - ');
-    } else if (node.type === 'change') {
-      label = pc.dim(label);
-    } else if (node.type === 'file') {
-      label = pc.blue(label);
-    }
-
-    const line = indent + prefix + label;
-
-    if (isSelected) {
-      lines.push(pc.inverse(line.padEnd(cols)));
-    } else {
-      lines.push(line);
-    }
+    lines.push(''); // Empty line between hunks
   }
-
-  // Pad remaining lines
-  while (lines.length < rows - 3) {
-    lines.push('');
-  }
-
-  // Footer
-  lines.push(pc.dim('─'.repeat(cols)));
-  const footer = pc.dim(
-    ' j/k: navigate │ Enter: expand │ Tab: switch view │ q: quit'
-  );
-  lines.push(footer);
 
   return lines;
 }
 
-export function getTreeNodeCount(state: AppState): number {
-  return buildTreeNodes(state).length;
+export function buildRenderLines(state: AppState): RenderLine[] {
+  const lines: RenderLine[] = [];
+
+  state.reasoningGroups.forEach((group, reasoningIdx) => {
+    const isReasoningExpanded = state.expandedReasonings.has(reasoningIdx);
+
+    // Reasoning line
+    lines.push({
+      id: `r-${reasoningIdx}`,
+      type: 'reasoning',
+      depth: 0,
+      content: group.reasoning,
+      isExpandable: true,
+      isExpanded: isReasoningExpanded,
+    });
+
+    if (isReasoningExpanded) {
+      // File lines
+      group.files.forEach((file) => {
+        const fileKey = `${reasoningIdx}|${file.path}`;
+        const isFileExpanded = state.expandedFiles.has(fileKey);
+
+        lines.push({
+          id: `f-${fileKey}`,
+          type: 'file',
+          depth: 1,
+          content: file.path,
+          isExpandable: true,
+          isExpanded: isFileExpanded,
+        });
+
+        if (isFileExpanded) {
+          // Add diff content as non-selectable lines
+          lines.push({
+            id: `d-${fileKey}`,
+            type: 'diff',
+            depth: 2,
+            content: JSON.stringify(file.hunks), // Will be rendered specially
+            isExpandable: false,
+            isExpanded: false,
+          });
+        }
+      });
+    }
+  });
+
+  return lines;
 }
 
-export function getNodeIdAtIndex(state: AppState, index: number): string | null {
-  const nodes = buildTreeNodes(state);
-  return nodes[index]?.id || null;
+export function getSelectableLines(state: AppState): RenderLine[] {
+  return buildRenderLines(state).filter((line) => line.type !== 'diff');
+}
+
+export function renderView(state: AppState): string[] {
+  const { cols, rows } = getTerminalSize();
+  const output: string[] = [];
+
+  // Header
+  const totalChanges = state.reasoningGroups.length;
+  const header = ` CodeWalker - ${pc.cyan(state.branch)} (${totalChanges} logical changes)`;
+  output.push(pc.bold(header));
+  output.push(pc.dim('─'.repeat(cols)));
+
+  // Build all render lines
+  const allLines = buildRenderLines(state);
+  const selectableLines = allLines.filter((line) => line.type !== 'diff');
+
+  // Calculate content height
+  const contentHeight = rows - 4; // header, separator, footer
+
+  // Build the visual output
+  const visualLines: string[] = [];
+  let selectableIndex = 0;
+
+  for (const line of allLines) {
+    if (line.type === 'diff') {
+      // Render diff content
+      const hunks: ParsedHunk[] = JSON.parse(line.content);
+      const diffLines = renderHunks(hunks, cols);
+      visualLines.push(...diffLines);
+    } else {
+      // Render reasoning or file line
+      const isSelected = selectableIndex === state.selectedIndex;
+      const indent = '  '.repeat(line.depth);
+      const prefix = line.isExpandable
+        ? (line.isExpanded ? '▼ ' : '▶ ')
+        : '  ';
+
+      let label = truncate(line.content, cols - indent.length - prefix.length - 4);
+
+      if (line.type === 'reasoning') {
+        // Count files in this reasoning
+        const reasoningIdx = parseInt(line.id.split('-')[1]);
+        const fileCount = state.reasoningGroups[reasoningIdx].files.length;
+        label = `${label} ${pc.dim(`(${fileCount} files)`)}`;
+      } else if (line.type === 'file') {
+        label = pc.blue(label);
+      }
+
+      const fullLine = indent + prefix + label;
+
+      if (isSelected) {
+        visualLines.push(pc.inverse(fullLine.padEnd(cols)));
+      } else {
+        visualLines.push(fullLine);
+      }
+
+      selectableIndex++;
+    }
+  }
+
+  // Apply scrolling
+  const visibleLines = visualLines.slice(
+    state.scrollOffset,
+    state.scrollOffset + contentHeight
+  );
+
+  output.push(...visibleLines);
+
+  // Pad if needed
+  while (output.length < rows - 2) {
+    output.push('');
+  }
+
+  // Footer
+  output.push(pc.dim('─'.repeat(cols)));
+  output.push(pc.dim(' j/k: navigate │ Enter: expand/collapse │ q: quit'));
+
+  return output;
+}
+
+export function getItemCount(state: AppState): number {
+  return getSelectableLines(state).length;
+}
+
+export function getItemIdAtIndex(state: AppState, index: number): string | null {
+  const lines = getSelectableLines(state);
+  return lines[index]?.id || null;
+}
+
+export function toggleExpand(state: AppState): void {
+  const lines = getSelectableLines(state);
+  const line = lines[state.selectedIndex];
+  if (!line || !line.isExpandable) return;
+
+  if (line.type === 'reasoning') {
+    const reasoningIdx = parseInt(line.id.split('-')[1]);
+    if (state.expandedReasonings.has(reasoningIdx)) {
+      state.expandedReasonings.delete(reasoningIdx);
+      // Also collapse all files in this reasoning
+      for (const key of state.expandedFiles) {
+        if (key.startsWith(`${reasoningIdx}|`)) {
+          state.expandedFiles.delete(key);
+        }
+      }
+    } else {
+      state.expandedReasonings.add(reasoningIdx);
+    }
+  } else if (line.type === 'file') {
+    const fileKey = line.id.replace('f-', '');
+    if (state.expandedFiles.has(fileKey)) {
+      state.expandedFiles.delete(fileKey);
+    } else {
+      state.expandedFiles.add(fileKey);
+    }
+  }
 }
