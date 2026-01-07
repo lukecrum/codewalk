@@ -355,7 +355,6 @@ export class TreeView {
             width: '100%',
             flexDirection: 'column',
             paddingLeft: 3,
-            paddingTop: 1,
           });
 
           // Clickable file header box

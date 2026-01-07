@@ -20975,18 +20975,15 @@ class TreeView {
       });
       const defaultBg = isHighlighted ? "#2a2a4e" : "#0f0f1a";
       const hoverBg = "#3a3a5e";
+      const effectiveBg = isSelected ? hoverBg : defaultBg;
       const reasoningHeaderBox = new BoxRenderable(this.renderer, {
         width: "100%",
-        backgroundColor: defaultBg,
-        border: isSelected ? ["left"] : false,
-        borderColor: "#88ccff",
-        borderStyle: "single",
-        paddingBottom: 1,
+        backgroundColor: effectiveBg,
         onMouseOver: function() {
           this.backgroundColor = hoverBg;
         },
         onMouseOut: function() {
-          this.backgroundColor = defaultBg;
+          this.backgroundColor = effectiveBg;
         },
         onMouseDown: () => {
           this.toggleReasoningByIndex(reasoningIdx);
@@ -21014,23 +21011,20 @@ class TreeView {
           const fileBox = new BoxRenderable(this.renderer, {
             width: "100%",
             flexDirection: "column",
-            paddingLeft: 3,
-            paddingTop: 1
+            paddingLeft: 3
           });
           const filePath = file.path;
           const fileDefaultBg = "#0f0f1a";
           const fileHoverBg = "#3a3a5e";
+          const fileEffectiveBg = isFileSelected ? fileHoverBg : fileDefaultBg;
           const fileHeaderBox = new BoxRenderable(this.renderer, {
             width: "100%",
-            backgroundColor: fileDefaultBg,
-            border: isFileSelected ? ["left"] : false,
-            borderColor: "#88ccff",
-            borderStyle: "single",
+            backgroundColor: fileEffectiveBg,
             onMouseOver: function() {
               this.backgroundColor = fileHoverBg;
             },
             onMouseOut: function() {
-              this.backgroundColor = fileDefaultBg;
+              this.backgroundColor = fileEffectiveBg;
             },
             onMouseDown: () => {
               this.toggleFileByKey(reasoningIdx, filePath);
