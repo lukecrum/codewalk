@@ -21027,6 +21027,27 @@ class TreeView {
     this.headerBox.add(headerText);
   }
   buildContent() {
+    if (this.state.reasoningGroups.length === 0) {
+      const emptyBox = new BoxRenderable(this.renderer, {
+        width: "100%",
+        flexDirection: "column",
+        paddingLeft: 2,
+        paddingTop: 2
+      });
+      const emptyText = new TextRenderable(this.renderer, {
+        content: "No tracked changes on this branch.",
+        fg: "#888888"
+      });
+      emptyBox.add(emptyText);
+      const hintText = new TextRenderable(this.renderer, {
+        content: "Make some changes with Claude Code to see them here.",
+        fg: "#666666",
+        paddingTop: 1
+      });
+      emptyBox.add(hintText);
+      this.scrollBox.add(emptyBox);
+      return;
+    }
     this.state.reasoningGroups.forEach((group, reasoningIdx) => {
       const isExpanded = this.state.expandedReasonings.has(reasoningIdx);
       const isSelected = this.isReasoningSelected(reasoningIdx);
@@ -21274,8 +21295,14 @@ class TreeView {
   refresh() {
     this.buildUI();
   }
-  updateData(reasoningGroups) {
+  updateData(reasoningGroups, branch) {
     this.state.reasoningGroups = reasoningGroups;
+    if (branch) {
+      this.state.branch = branch;
+      this.state.expandedReasonings.clear();
+      this.state.expandedFiles.clear();
+      this.state.selectedIndex = 0;
+    }
     this.buildUI();
   }
   destroy() {
@@ -21284,6 +21311,20 @@ class TreeView {
 }
 
 // src/commands/visualize.ts
+async function loadBranchData(cwd) {
+  const branch = getCurrentBranch(cwd);
+  const commits = getBranchCommits(cwd);
+  if (commits.length === 0) {
+    return { branch, reasoningGroups: [] };
+  }
+  const allTrackedCommits = await loadTrackingFiles(cwd, commits);
+  const trackedCommits = getTrackedCommits(allTrackedCommits);
+  if (trackedCommits.length === 0) {
+    return { branch, reasoningGroups: [] };
+  }
+  const reasoningGroups = aggregateByReasoning(cwd, trackedCommits);
+  return { branch, reasoningGroups };
+}
 async function visualizeCommand(options) {
   const { cwd } = options;
   if (!isGitRepo(cwd)) {
@@ -21291,26 +21332,7 @@ async function visualizeCommand(options) {
     process.exit(1);
   }
   console.log(import_picocolors2.default.dim("Loading tracking data..."));
-  const branch = getCurrentBranch(cwd);
-  const commits = getBranchCommits(cwd);
-  if (commits.length === 0) {
-    console.log(import_picocolors2.default.yellow("No commits found on this branch."));
-    console.log(import_picocolors2.default.dim("This branch has no commits that differ from main."));
-    return;
-  }
-  const allTrackedCommits = await loadTrackingFiles(cwd, commits);
-  const trackedCommits = getTrackedCommits(allTrackedCommits);
-  if (trackedCommits.length === 0) {
-    console.log(import_picocolors2.default.yellow("No tracked commits found in .codewalker/"));
-    console.log(import_picocolors2.default.dim("Run some tasks with Claude Code to generate tracking data."));
-    return;
-  }
-  console.log(import_picocolors2.default.dim("Aggregating changes by reasoning..."));
-  const reasoningGroups = aggregateByReasoning(cwd, trackedCommits);
-  if (reasoningGroups.length === 0) {
-    console.log(import_picocolors2.default.yellow("No changes with diffs found."));
-    return;
-  }
+  const { branch, reasoningGroups } = await loadBranchData(cwd);
   console.log(import_picocolors2.default.dim("Starting visualizer..."));
   const renderer = await createCliRenderer({
     exitOnCtrlC: true,
@@ -21320,39 +21342,45 @@ async function visualizeCommand(options) {
   });
   const state = createAppState(branch, reasoningGroups);
   const treeView = new TreeView(renderer, state);
+  let currentBranch = branch;
   const codewalkerDir = path5.join(cwd, ".codewalker");
-  let watcher = null;
+  const gitHeadPath = path5.join(cwd, ".git", "HEAD");
+  let trackingWatcher = null;
+  let branchWatcher = null;
   let debounceTimer = null;
-  const reloadData = async () => {
-    const freshCommits = getBranchCommits(cwd);
-    if (freshCommits.length === 0)
-      return;
-    const freshTrackedCommits = await loadTrackingFiles(cwd, freshCommits);
-    const freshTracked = getTrackedCommits(freshTrackedCommits);
-    if (freshTracked.length === 0)
-      return;
-    const freshReasoningGroups = aggregateByReasoning(cwd, freshTracked);
-    if (freshReasoningGroups.length > 0) {
-      treeView.updateData(freshReasoningGroups);
+  const reloadData = async (branchChanged = false) => {
+    const { branch: newBranch, reasoningGroups: newGroups } = await loadBranchData(cwd);
+    if (branchChanged || newBranch !== currentBranch) {
+      currentBranch = newBranch;
+      treeView.updateData(newGroups, newBranch);
+    } else if (newGroups.length > 0) {
+      treeView.updateData(newGroups);
     }
   };
   try {
-    watcher = fs4.watch(codewalkerDir, (eventType, filename) => {
+    trackingWatcher = fs4.watch(codewalkerDir, (eventType, filename) => {
       if (filename && filename.endsWith(".json")) {
         if (debounceTimer)
           clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-          reloadData();
-        }, 100);
+        debounceTimer = setTimeout(() => reloadData(), 100);
       }
+    });
+  } catch {}
+  try {
+    branchWatcher = fs4.watch(gitHeadPath, () => {
+      if (debounceTimer)
+        clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => reloadData(true), 100);
     });
   } catch {}
   renderer.keyInput.on("keypress", (event) => {
     const key = event.name;
     switch (key) {
       case "q":
-        if (watcher)
-          watcher.close();
+        if (trackingWatcher)
+          trackingWatcher.close();
+        if (branchWatcher)
+          branchWatcher.close();
         if (debounceTimer)
           clearTimeout(debounceTimer);
         treeView.destroy();

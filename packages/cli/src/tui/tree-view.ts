@@ -293,6 +293,32 @@ export class TreeView {
   }
 
   private buildContent(): void {
+    // Show empty state message if no reasoning groups
+    if (this.state.reasoningGroups.length === 0) {
+      const emptyBox = new BoxRenderable(this.renderer, {
+        width: '100%',
+        flexDirection: 'column',
+        paddingLeft: 2,
+        paddingTop: 2,
+      });
+
+      const emptyText = new TextRenderable(this.renderer, {
+        content: 'No tracked changes on this branch.',
+        fg: '#888888',
+      });
+      emptyBox.add(emptyText);
+
+      const hintText = new TextRenderable(this.renderer, {
+        content: 'Make some changes with Claude Code to see them here.',
+        fg: '#666666',
+        paddingTop: 1,
+      });
+      emptyBox.add(hintText);
+
+      this.scrollBox.add(emptyBox);
+      return;
+    }
+
     this.state.reasoningGroups.forEach((group, reasoningIdx) => {
       const isExpanded = this.state.expandedReasonings.has(reasoningIdx);
       const isSelected = this.isReasoningSelected(reasoningIdx);
@@ -610,12 +636,17 @@ export class TreeView {
   }
 
   /**
-   * Update the view with new data (e.g., when new tracking files are added)
+   * Update the view with new data (e.g., when new tracking files are added or branch changes)
    */
-  public updateData(reasoningGroups: ReasoningGroup[]): void {
+  public updateData(reasoningGroups: ReasoningGroup[], branch?: string): void {
     this.state.reasoningGroups = reasoningGroups;
-    // Reset expansion state for new items but keep existing ones
-    // This way newly added items start collapsed
+    if (branch) {
+      this.state.branch = branch;
+      // Clear expansion state when switching branches
+      this.state.expandedReasonings.clear();
+      this.state.expandedFiles.clear();
+      this.state.selectedIndex = 0;
+    }
     this.buildUI();
   }
 
