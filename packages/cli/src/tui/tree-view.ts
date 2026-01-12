@@ -7,6 +7,7 @@ import {
 } from '@opentui/core';
 import type { AppState } from './app.js';
 import type { ParsedHunk } from '../utils/git.js';
+import type { ReasoningGroup } from '../utils/tracking.js';
 
 // Convert hunks to unified diff format for DiffRenderable
 function hunksToUnifiedDiff(filePath: string, hunks: ParsedHunk[]): string {
@@ -605,6 +606,16 @@ export class TreeView {
   }
 
   public refresh(): void {
+    this.buildUI();
+  }
+
+  /**
+   * Update the view with new data (e.g., when new tracking files are added)
+   */
+  public updateData(reasoningGroups: ReasoningGroup[]): void {
+    this.state.reasoningGroups = reasoningGroups;
+    // Reset expansion state for new items but keep existing ones
+    // This way newly added items start collapsed
     this.buildUI();
   }
 

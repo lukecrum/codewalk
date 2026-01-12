@@ -1,4 +1,6 @@
 import pc from 'picocolors';
+import * as fs from 'fs';
+import * as path from 'path';
 import { createCliRenderer } from '@opentui/core';
 import { getCurrentBranch, getBranchCommits, isGitRepo } from '../utils/git.js';
 import { loadTrackingFiles, getTrackedCommits, aggregateByReasoning } from '../utils/tracking.js';
@@ -67,12 +69,49 @@ export async function visualizeCommand(options: VisualizeOptions): Promise<void>
   // Create tree view
   const treeView = new TreeView(renderer, state);
 
+  // Watch for new tracking files
+  const codewalkerDir = path.join(cwd, '.codewalker');
+  let watcher: fs.FSWatcher | null = null;
+  let debounceTimer: NodeJS.Timeout | null = null;
+
+  const reloadData = async () => {
+    // Get fresh commit list and tracking files
+    const freshCommits = getBranchCommits(cwd);
+    if (freshCommits.length === 0) return;
+
+    const freshTrackedCommits = await loadTrackingFiles(cwd, freshCommits);
+    const freshTracked = getTrackedCommits(freshTrackedCommits);
+    if (freshTracked.length === 0) return;
+
+    const freshReasoningGroups = aggregateByReasoning(cwd, freshTracked);
+    if (freshReasoningGroups.length > 0) {
+      treeView.updateData(freshReasoningGroups);
+    }
+  };
+
+  try {
+    watcher = fs.watch(codewalkerDir, (eventType, filename) => {
+      // Only react to new .json files
+      if (filename && filename.endsWith('.json')) {
+        // Debounce to avoid multiple rapid updates
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          reloadData();
+        }, 100);
+      }
+    });
+  } catch {
+    // Directory might not exist yet, that's okay
+  }
+
   // Handle keyboard input
   renderer.keyInput.on('keypress', (event) => {
     const key = event.name;
 
     switch (key) {
       case 'q':
+        if (watcher) watcher.close();
+        if (debounceTimer) clearTimeout(debounceTimer);
         treeView.destroy();
         renderer.destroy();
         process.exit(0);

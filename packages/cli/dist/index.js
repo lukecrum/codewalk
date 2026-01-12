@@ -2139,6 +2139,8 @@ Next steps:`);
 
 // src/commands/visualize.ts
 var import_picocolors2 = __toESM(require_picocolors(), 1);
+import * as fs4 from "fs";
+import * as path5 from "path";
 
 // ../../node_modules/@opentui/core/index-zj0wwh9d.js
 import { Buffer as Buffer2 } from "buffer";
@@ -21272,6 +21274,10 @@ class TreeView {
   refresh() {
     this.buildUI();
   }
+  updateData(reasoningGroups) {
+    this.state.reasoningGroups = reasoningGroups;
+    this.buildUI();
+  }
   destroy() {
     this.renderer.root.remove(this.rootBox.id);
   }
@@ -21314,10 +21320,41 @@ async function visualizeCommand(options) {
   });
   const state = createAppState(branch, reasoningGroups);
   const treeView = new TreeView(renderer, state);
+  const codewalkerDir = path5.join(cwd, ".codewalker");
+  let watcher = null;
+  let debounceTimer = null;
+  const reloadData = async () => {
+    const freshCommits = getBranchCommits(cwd);
+    if (freshCommits.length === 0)
+      return;
+    const freshTrackedCommits = await loadTrackingFiles(cwd, freshCommits);
+    const freshTracked = getTrackedCommits(freshTrackedCommits);
+    if (freshTracked.length === 0)
+      return;
+    const freshReasoningGroups = aggregateByReasoning(cwd, freshTracked);
+    if (freshReasoningGroups.length > 0) {
+      treeView.updateData(freshReasoningGroups);
+    }
+  };
+  try {
+    watcher = fs4.watch(codewalkerDir, (eventType, filename) => {
+      if (filename && filename.endsWith(".json")) {
+        if (debounceTimer)
+          clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          reloadData();
+        }, 100);
+      }
+    });
+  } catch {}
   renderer.keyInput.on("keypress", (event) => {
     const key = event.name;
     switch (key) {
       case "q":
+        if (watcher)
+          watcher.close();
+        if (debounceTimer)
+          clearTimeout(debounceTimer);
         treeView.destroy();
         renderer.destroy();
         process.exit(0);
