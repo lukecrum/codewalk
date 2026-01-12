@@ -298,13 +298,13 @@ export class TreeView {
       // Highlight expanded reasoning blocks
       const isHighlighted = isExpanded;
 
-      // Reasoning container
+      // Reasoning container - no paddingTop so sticky header goes all the way to top
       const reasoningBox = new BoxRenderable(this.renderer, {
         width: '100%',
         flexDirection: 'column',
         paddingLeft: 1,
-        paddingTop: 1,
-        backgroundColor: isHighlighted ? '#1a1a3e' : undefined,
+        marginTop: reasoningIdx > 0 ? 1 : 0, // Add spacing between sections (not above first)
+        backgroundColor: isHighlighted ? '#1a1a3e' : '#0f0f1a',
       });
 
       // Clickable reasoning header box (with background for sticky behavior)
@@ -555,7 +555,8 @@ export class TreeView {
     if (newIndex >= 0 && newIndex < this.selectableItems.length) {
       this.state.selectedIndex = newIndex;
       this.buildUI();
-      this.scrollToSelected();
+      // Defer scroll to next tick to ensure layout is computed
+      setTimeout(() => this.scrollToSelected(), 0);
     }
   }
 
