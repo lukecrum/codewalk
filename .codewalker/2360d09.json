@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "commit": "2360d09",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Add a Stop hook to the init command that enforces the codewalker workflow. When Claude attempts to stop, an LLM (Haiku) evaluates whether code changes were made and if so, whether the tracking file was created and committed. This provides automated enforcement instead of relying solely on skill instructions.",
+      "files": [
+        { "path": "packages/cli/src/commands/init.ts", "hunks": [1, 2] }
+      ]
+    }
+  ]
+}
