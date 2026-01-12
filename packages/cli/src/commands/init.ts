@@ -104,6 +104,22 @@ const CLAUDE_MD_CONTENT = `# Code Walker
 See \`.claude/skills/codewalker.md\` for the complete schema and examples.
 `;
 
+const SETTINGS_CONTENT = {
+  hooks: {
+    Stop: [
+      {
+        hooks: [
+          {
+            type: "prompt",
+            prompt: "Check if the assistant made code changes in this session. If code changes were made, verify: 1) Changes were committed with git, 2) A tracking file was created at .codewalker/<commit-hash>.json, 3) The tracking file was also committed. If any of these are missing, block stopping and instruct to complete the codewalker workflow. If no code changes were made, or all steps are complete, approve stopping.",
+            timeout: 30
+          }
+        ]
+      }
+    ]
+  }
+};
+
 async function fileExists(filePath: string): Promise<boolean> {
   try {
     await fs.access(filePath);
@@ -166,6 +182,35 @@ export async function initCommand(options: InitOptions): Promise<void> {
     console.log(pc.green('✓') + ' Created .codewalker/ directory');
   } else {
     console.log(pc.yellow('○') + ' .codewalker/ directory already exists');
+  }
+
+  // 5. Create/update settings.local.json with Stop hook
+  const settingsPath = path.join(cwd, '.claude', 'settings.local.json');
+  let existingSettings: Record<string, unknown> = {};
+
+  try {
+    const content = await fs.readFile(settingsPath, 'utf-8');
+    existingSettings = JSON.parse(content);
+  } catch {
+    // File doesn't exist or is invalid, will create new
+  }
+
+  const hasStopHook = existingSettings.hooks &&
+    typeof existingSettings.hooks === 'object' &&
+    'Stop' in (existingSettings.hooks as Record<string, unknown>);
+
+  if (!hasStopHook) {
+    const mergedSettings = {
+      ...existingSettings,
+      hooks: {
+        ...(existingSettings.hooks as Record<string, unknown> || {}),
+        ...SETTINGS_CONTENT.hooks
+      }
+    };
+    await fs.writeFile(settingsPath, JSON.stringify(mergedSettings, null, 2) + '\n');
+    console.log(pc.green('✓') + ' Added Stop hook to .claude/settings.local.json');
+  } else {
+    console.log(pc.yellow('○') + ' Stop hook already configured, skipping');
   }
 
   console.log(pc.bold('\nCodeWalker initialized successfully!'));
