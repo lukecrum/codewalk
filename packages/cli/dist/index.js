@@ -20628,9 +20628,15 @@ function getCurrentBranch(cwd) {
     throw new Error("Not a git repository or git is not installed");
   }
 }
-function getCommitList(cwd) {
+function getBranchCommits(cwd) {
+  const currentBranch = getCurrentBranch(cwd);
+  const mainBranch = getMainBranch(cwd);
+  if (currentBranch === mainBranch) {
+    return [];
+  }
   try {
-    const output = execSync('git log --format="%H|%h|%an|%s" --first-parent', {
+    const mergeBase = getMergeBase(cwd, mainBranch, "HEAD");
+    const output = execSync(`git log --format="%H|%h|%an|%s" --first-parent ${mergeBase}..HEAD`, {
       cwd,
       encoding: "utf-8"
     });
@@ -20645,7 +20651,7 @@ function getCommitList(cwd) {
       };
     });
   } catch {
-    throw new Error("Failed to get commit list");
+    return [];
   }
 }
 function isGitRepo(cwd) {
@@ -20654,6 +20660,27 @@ function isGitRepo(cwd) {
     return true;
   } catch {
     return false;
+  }
+}
+function getMainBranch(cwd) {
+  try {
+    const result = execSync('git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null || echo "refs/heads/main"', {
+      cwd,
+      encoding: "utf-8"
+    }).trim();
+    return result.replace("refs/remotes/origin/", "").replace("refs/heads/", "");
+  } catch {
+    return "main";
+  }
+}
+function getMergeBase(cwd, branch1, branch2) {
+  try {
+    return execSync(`git merge-base ${branch1} ${branch2}`, {
+      cwd,
+      encoding: "utf-8"
+    }).trim();
+  } catch {
+    throw new Error(`Failed to find merge base between ${branch1} and ${branch2}`);
   }
 }
 function getCommitDiff(cwd, commitSha) {
@@ -21259,7 +21286,12 @@ async function visualizeCommand(options) {
   }
   console.log(import_picocolors2.default.dim("Loading tracking data..."));
   const branch = getCurrentBranch(cwd);
-  const commits = getCommitList(cwd);
+  const commits = getBranchCommits(cwd);
+  if (commits.length === 0) {
+    console.log(import_picocolors2.default.yellow("No commits found on this branch."));
+    console.log(import_picocolors2.default.dim("This branch has no commits that differ from main."));
+    return;
+  }
   const allTrackedCommits = await loadTrackingFiles(cwd, commits);
   const trackedCommits = getTrackedCommits(allTrackedCommits);
   if (trackedCommits.length === 0) {

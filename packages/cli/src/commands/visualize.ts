@@ -1,6 +1,6 @@
 import pc from 'picocolors';
 import { createCliRenderer } from '@opentui/core';
-import { getCurrentBranch, getCommitList, isGitRepo } from '../utils/git.js';
+import { getCurrentBranch, getBranchCommits, isGitRepo } from '../utils/git.js';
 import { loadTrackingFiles, getTrackedCommits, aggregateByReasoning } from '../utils/tracking.js';
 import { createAppState } from '../tui/app.js';
 import { TreeView } from '../tui/tree-view.js';
@@ -22,7 +22,16 @@ export async function visualizeCommand(options: VisualizeOptions): Promise<void>
   console.log(pc.dim('Loading tracking data...'));
 
   const branch = getCurrentBranch(cwd);
-  const commits = getCommitList(cwd);
+
+  // Get only commits that are unique to this branch (not on main)
+  const commits = getBranchCommits(cwd);
+
+  if (commits.length === 0) {
+    console.log(pc.yellow('No commits found on this branch.'));
+    console.log(pc.dim('This branch has no commits that differ from main.'));
+    return;
+  }
+
   const allTrackedCommits = await loadTrackingFiles(cwd, commits);
   const trackedCommits = getTrackedCommits(allTrackedCommits);
 

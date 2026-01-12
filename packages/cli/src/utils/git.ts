@@ -29,9 +29,11 @@ export function getCurrentBranch(cwd: string): string {
   }
 }
 
-export function getCommitList(cwd: string): CommitInfo[] {
+export function getCommitList(cwd: string, baseBranch?: string): CommitInfo[] {
   try {
-    const output = execSync('git log --format="%H|%h|%an|%s" --first-parent', {
+    // If baseBranch provided, get only commits since diverging from it
+    const range = baseBranch ? `${baseBranch}..HEAD` : '';
+    const output = execSync(`git log --format="%H|%h|%an|%s" --first-parent ${range}`, {
       cwd,
       encoding: 'utf-8',
     });
@@ -51,6 +53,47 @@ export function getCommitList(cwd: string): CommitInfo[] {
       });
   } catch {
     throw new Error('Failed to get commit list');
+  }
+}
+
+/**
+ * Get commits that are unique to the current branch (not on the main branch).
+ */
+export function getBranchCommits(cwd: string): CommitInfo[] {
+  const currentBranch = getCurrentBranch(cwd);
+  const mainBranch = getMainBranch(cwd);
+
+  // If we're on main, return empty - no branch-specific commits
+  if (currentBranch === mainBranch) {
+    return [];
+  }
+
+  try {
+    // Get merge base to find where this branch diverged
+    const mergeBase = getMergeBase(cwd, mainBranch, 'HEAD');
+
+    // Get commits from merge base to HEAD (exclusive of merge base)
+    const output = execSync(`git log --format="%H|%h|%an|%s" --first-parent ${mergeBase}..HEAD`, {
+      cwd,
+      encoding: 'utf-8',
+    });
+
+    return output
+      .trim()
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        const [sha, shortSha, author, ...messageParts] = line.split('|');
+        return {
+          sha,
+          shortSha,
+          author,
+          message: messageParts.join('|'),
+        };
+      });
+  } catch {
+    // Fallback: if merge-base fails, return empty
+    return [];
   }
 }
 
