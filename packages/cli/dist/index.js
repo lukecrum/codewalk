@@ -20947,8 +20947,9 @@ class TreeView {
         continue;
       }
       const reasoningHeaderHeight = reasoningHeaderBox.height || 2;
-      if (scrollTop > boxTop && scrollTop < boxBottom - reasoningHeaderHeight) {
-        const offset = scrollTop - boxTop;
+      const reasoningPaddingTop = 1;
+      if (scrollTop >= boxTop + reasoningPaddingTop && scrollTop < boxBottom - reasoningHeaderHeight) {
+        const offset = scrollTop - boxTop - reasoningPaddingTop;
         reasoningHeaderBox.translateY = offset;
         reasoningHeaderBox.zIndex = 100;
       } else {
@@ -21274,7 +21275,7 @@ class TreeView {
       const item = this.itemRenderables.find((it) => it.type === "reasoning" && it.renderable === reasoningBox);
       if (item && item.type === "reasoning" && item.reasoningIdx === selectedItem.reasoningIdx) {
         if (selectedItem.type === "reasoning") {
-          this.scrollBox.scrollTop = position;
+          this.scrollBox.scrollTo(position);
           return;
         }
         const reasoningChildren = reasoningBox.getChildren();
@@ -21283,7 +21284,7 @@ class TreeView {
           const fileBox = reasoningChildren[i];
           const fileItem = this.itemRenderables.find((it) => it.type === "file" && it.renderable === fileBox);
           if (fileItem && fileItem.filePath === selectedItem.filePath) {
-            this.scrollBox.scrollTop = position + fileOffset;
+            this.scrollBox.scrollTo(position + fileOffset);
             return;
           }
           fileOffset += fileBox.height;

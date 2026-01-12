@@ -176,8 +176,12 @@ export class TreeView {
       const reasoningHeaderHeight = reasoningHeaderBox.height || 2;
 
       // Check if reasoning header should stick
-      if (scrollTop > boxTop && scrollTop < boxBottom - reasoningHeaderHeight) {
-        const offset = scrollTop - boxTop;
+      // Account for paddingTop (1) on the reasoningBox - header needs to cover that gap
+      const reasoningPaddingTop = 1;
+      // Start sticking when header would scroll off screen (accounting for padding)
+      if (scrollTop >= boxTop + reasoningPaddingTop && scrollTop < boxBottom - reasoningHeaderHeight) {
+        // Offset to position header at top of viewport
+        const offset = scrollTop - boxTop - reasoningPaddingTop;
         reasoningHeaderBox.translateY = offset;
         reasoningHeaderBox.zIndex = 100;
       } else {
@@ -603,8 +607,8 @@ export class TreeView {
 
       if (item && item.type === 'reasoning' && item.reasoningIdx === selectedItem.reasoningIdx) {
         if (selectedItem.type === 'reasoning') {
-          // Scroll to this reasoning
-          this.scrollBox.scrollTop = position;
+          // Scroll to this reasoning - position at top of visible area
+          this.scrollBox.scrollTo(position);
           return;
         }
 
@@ -619,7 +623,8 @@ export class TreeView {
           );
 
           if (fileItem && fileItem.filePath === selectedItem.filePath) {
-            this.scrollBox.scrollTop = position + fileOffset;
+            // Scroll to file - position at top of visible area
+            this.scrollBox.scrollTo(position + fileOffset);
             return;
           }
 

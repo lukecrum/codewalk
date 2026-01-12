@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "commit": "f2bf6b5",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Fix sticky header showing a visible line above it when scrolling. The issue was that the translateY calculation didn't account for the reasoningBox's paddingTop of 1, causing the header to be positioned 1 row below the viewport top. Changed the sticky trigger condition to start when the header would actually scroll off screen (>= boxTop + paddingTop instead of > boxTop), and adjusted the offset calculation to position the header exactly at the viewport top. Also added a default background color (#0f0f1a) to reasoningBox even when not highlighted to prevent any scroll-through artifacts in the padding area.",
+      "files": [
+        { "path": "packages/cli/src/tui/tree-view.ts", "hunks": [1, 2] }
+      ]
+    },
+    {
+      "reasoning": "Use scrollTo() instead of directly setting scrollTop for keyboard navigation. This provides more consistent scroll behavior when using arrow keys to navigate between items, ensuring selected items appear at the top of the visible area rather than potentially at the bottom.",
+      "files": [
+        { "path": "packages/cli/src/tui/tree-view.ts", "hunks": [3, 4] }
+      ]
+    }
+  ]
+}
