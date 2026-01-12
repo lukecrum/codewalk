@@ -2048,6 +2048,21 @@ var CLAUDE_MD_CONTENT = `# Code Walker
 
 See \`.claude/skills/codewalker.md\` for the complete schema and examples.
 `;
+var SETTINGS_CONTENT = {
+  hooks: {
+    Stop: [
+      {
+        hooks: [
+          {
+            type: "prompt",
+            prompt: "Check if the assistant made code changes in this session. If code changes were made, verify: 1) Changes were committed with git, 2) A tracking file was created at .codewalker/<commit-hash>.json, 3) The tracking file was also committed. If any of these are missing, block stopping and instruct to complete the codewalker workflow. If no code changes were made, or all steps are complete, approve stopping.",
+            timeout: 30
+          }
+        ]
+      }
+    ]
+  }
+};
 async function fileExists(filePath) {
   try {
     await fs.access(filePath);
@@ -2091,6 +2106,27 @@ async function initCommand(options) {
     console.log(import_picocolors.default.green("\u2713") + " Created .codewalker/ directory");
   } else {
     console.log(import_picocolors.default.yellow("\u25CB") + " .codewalker/ directory already exists");
+  }
+  const settingsPath = path.join(cwd, ".claude", "settings.local.json");
+  let existingSettings = {};
+  try {
+    const content = await fs.readFile(settingsPath, "utf-8");
+    existingSettings = JSON.parse(content);
+  } catch {}
+  const hasStopHook = existingSettings.hooks && typeof existingSettings.hooks === "object" && "Stop" in existingSettings.hooks;
+  if (!hasStopHook) {
+    const mergedSettings = {
+      ...existingSettings,
+      hooks: {
+        ...existingSettings.hooks || {},
+        ...SETTINGS_CONTENT.hooks
+      }
+    };
+    await fs.writeFile(settingsPath, JSON.stringify(mergedSettings, null, 2) + `
+`);
+    console.log(import_picocolors.default.green("\u2713") + " Added Stop hook to .claude/settings.local.json");
+  } else {
+    console.log(import_picocolors.default.yellow("\u25CB") + " Stop hook already configured, skipping");
   }
   console.log(import_picocolors.default.bold(`
 CodeWalker initialized successfully!`));
@@ -20882,8 +20918,9 @@ class TreeView {
         continue;
       }
       const reasoningHeaderHeight = reasoningHeaderBox.height || 2;
-      if (scrollTop > boxTop && scrollTop < boxBottom - reasoningHeaderHeight) {
-        const offset = scrollTop - boxTop;
+      const reasoningPaddingTop = 1;
+      if (scrollTop >= boxTop + reasoningPaddingTop && scrollTop < boxBottom - reasoningHeaderHeight) {
+        const offset = scrollTop - boxTop - reasoningPaddingTop;
         reasoningHeaderBox.translateY = offset;
         reasoningHeaderBox.zIndex = 100;
       } else {
@@ -20971,7 +21008,7 @@ class TreeView {
         flexDirection: "column",
         paddingLeft: 1,
         paddingTop: 1,
-        backgroundColor: isHighlighted ? "#1a1a3e" : undefined
+        backgroundColor: isHighlighted ? "#1a1a3e" : "#0f0f1a"
       });
       const defaultBg = isHighlighted ? "#2a2a4e" : "#0f0f1a";
       const hoverBg = "#3a3a5e";
@@ -21188,7 +21225,7 @@ class TreeView {
       const item = this.itemRenderables.find((it) => it.type === "reasoning" && it.renderable === reasoningBox);
       if (item && item.type === "reasoning" && item.reasoningIdx === selectedItem.reasoningIdx) {
         if (selectedItem.type === "reasoning") {
-          this.scrollBox.scrollTop = position;
+          this.scrollBox.scrollTo(position);
           return;
         }
         const reasoningChildren = reasoningBox.getChildren();
@@ -21197,7 +21234,7 @@ class TreeView {
           const fileBox = reasoningChildren[i];
           const fileItem = this.itemRenderables.find((it) => it.type === "file" && it.renderable === fileBox);
           if (fileItem && fileItem.filePath === selectedItem.filePath) {
-            this.scrollBox.scrollTop = position + fileOffset;
+            this.scrollBox.scrollTo(position + fileOffset);
             return;
           }
           fileOffset += fileBox.height;
