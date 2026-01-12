@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "commit": "eb0bb24",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Fix sticky header showing a visible line above it when scrolling. Removed paddingTop from reasoningBox and replaced with marginTop (only between sections, not above the first). This allows the sticky header to go all the way to the viewport top without a gap. Also added a default background color (#0f0f1a) to reasoningBox to prevent any scroll-through artifacts.",
+      "files": [
+        { "path": "packages/cli/src/tui/tree-view.ts", "hunks": [1] }
+      ]
+    },
+    {
+      "reasoning": "Fix keyboard navigation scroll not working. Deferred scrollToSelected() call with setTimeout to ensure layout heights are computed before attempting to scroll to the selected item. Without this, heights may be 0 and scroll position calculation fails.",
+      "files": [
+        { "path": "packages/cli/src/tui/tree-view.ts", "hunks": [2] }
+      ]
+    }
+  ]
+}
