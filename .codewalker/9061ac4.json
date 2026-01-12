@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "commit": "9061ac4",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Remove table view and switch to a reasoning-centric visualization that matches the web app's PR default view. Changes are now grouped by their logical reasoning rather than by commit, making it easier to understand why changes were made.",
+      "files": [
+        { "path": "packages/cli/src/tui/table-view.ts", "hunks": [1] },
+        { "path": "packages/cli/src/commands/visualize.ts", "hunks": [1, 2, 3] },
+        { "path": "packages/cli/src/tui/app.ts", "hunks": [1] }
+      ]
+    },
+    {
+      "reasoning": "Add git diff utilities to fetch and parse actual file diffs from commits. This enables showing the actual code changes (additions/deletions) when a file is expanded in the visualizer.",
+      "files": [
+        { "path": "packages/cli/src/utils/git.ts", "hunks": [1, 2, 3] }
+      ]
+    },
+    {
+      "reasoning": "Aggregate tracking data by reasoning across all commits. The aggregateByReasoning function collects all changes with the same reasoning text and merges their file hunks, providing a unified view of each logical change.",
+      "files": [
+        { "path": "packages/cli/src/utils/tracking.ts", "hunks": [1, 2] }
+      ]
+    },
+    {
+      "reasoning": "Rewrite tree view to display reasoning -> files -> diff hierarchy. When a file is expanded, the actual diff hunks are rendered with color-coded additions (green) and deletions (red).",
+      "files": [
+        { "path": "packages/cli/src/tui/tree-view.ts", "hunks": [1, 2, 3, 4] }
+      ]
+    }
+  ]
+}

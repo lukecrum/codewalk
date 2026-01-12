@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "commit": "bea40fb",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Migrate CLI TUI from custom rendering to OpenTUI components. This replaces the custom ANSI rendering with OpenTUI's BoxRenderable, TextRenderable, ScrollBoxRenderable, and DiffRenderable components for a better terminal UI experience with proper word-wrapping and built-in diff viewing.",
+      "files": [
+        { "path": "packages/cli/src/tui/app.ts", "hunks": [1, 2] },
+        { "path": "packages/cli/src/tui/tree-view.ts", "hunks": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] },
+        { "path": "packages/cli/src/commands/visualize.ts", "hunks": [1, 2, 3] }
+      ]
+    },
+    {
+      "reasoning": "Switch from Node.js/tsc to Bun for building and runtime. OpenTUI uses Bun's FFI and requires the Bun runtime. Updated build scripts, shebang, and package configuration for ESM module support.",
+      "files": [
+        { "path": "packages/cli/package.json", "hunks": [1, 2] },
+        { "path": "packages/cli/bin/codewalker.js", "hunks": [1] },
+        { "path": "packages/cli/tsconfig.json", "hunks": [1] }
+      ]
+    },
+    {
+      "reasoning": "Convert imports to ESM format with .js extensions as required by NodeNext module resolution. This is needed for proper ESM compatibility with Bun.",
+      "files": [
+        { "path": "packages/cli/src/index.ts", "hunks": [1] },
+        { "path": "packages/cli/src/commands/visualize.ts", "hunks": [1] },
+        { "path": "packages/cli/src/tui/app.ts", "hunks": [1] },
+        { "path": "packages/cli/src/tui/tree-view.ts", "hunks": [1] },
+        { "path": "packages/cli/src/utils/tracking.ts", "hunks": [1] }
+      ]
+    },
+    {
+      "reasoning": "Add tree-sitter wasm and scm assets to gitignore. These are bundled by Bun during build and shouldn't be committed to version control.",
+      "files": [
+        { "path": ".gitignore", "hunks": [1] }
+      ]
+    }
+  ]
+}

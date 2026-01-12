@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "commit": "ea7f5b6",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Remove paddingTop from file container so reasoning header and file path header touch each other with no gap.",
+      "files": [
+        { "path": "packages/cli/src/tui/tree-view.ts", "hunks": [1] }
+      ]
+    }
+  ]
+}

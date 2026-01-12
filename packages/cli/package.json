@@ -1,0 +1,41 @@
+{
+  "name": "codewalker",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "CLI tool for visualizing AI-assisted code changes",
+  "bin": {
+    "codewalker": "./bin/codewalker.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "bun build ./src/index.ts --outdir ./dist --target bun",
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@opentui/core": "^0.1.69",
+    "commander": "^12.0.0",
+    "picocolors": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "keywords": [
+    "codewalker",
+    "code-review",
+    "ai",
+    "claude",
+    "visualization"
+  ],
+  "license": "MIT"
+}
