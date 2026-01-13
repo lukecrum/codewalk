@@ -162,7 +162,9 @@ export class TreeView {
         continue;
       }
 
-      const boxTop = contentOffset;
+      // Account for marginTop on reasoning boxes (all except first have marginTop: 1)
+      const marginTop = item.reasoningIdx > 0 ? 1 : 0;
+      const boxTop = contentOffset + marginTop;
       const boxHeight = reasoningBox.height;
       const boxBottom = boxTop + boxHeight;
 
@@ -176,12 +178,10 @@ export class TreeView {
       const reasoningHeaderHeight = reasoningHeaderBox.height || 2;
 
       // Check if reasoning header should stick
-      // Account for paddingTop (1) on the reasoningBox - header needs to cover that gap
-      const reasoningPaddingTop = 1;
-      // Start sticking when header would scroll off screen (accounting for padding)
-      if (scrollTop >= boxTop + reasoningPaddingTop && scrollTop < boxBottom - reasoningHeaderHeight) {
+      // Start sticking when header would scroll off screen
+      if (scrollTop >= boxTop && scrollTop < boxBottom - reasoningHeaderHeight) {
         // Offset to position header at top of viewport
-        const offset = scrollTop - boxTop - reasoningPaddingTop;
+        const offset = scrollTop - boxTop;
         reasoningHeaderBox.translateY = offset;
         reasoningHeaderBox.zIndex = 100;
       } else {
@@ -232,7 +232,7 @@ export class TreeView {
         fileOffset += fileHeight;
       }
 
-      contentOffset += boxHeight;
+      contentOffset += marginTop + boxHeight;
     }
 
     // Hide the separate sticky header box (not using it anymore)

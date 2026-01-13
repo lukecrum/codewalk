@@ -20938,7 +20938,8 @@ class TreeView {
         contentOffset += reasoningBox.height;
         continue;
       }
-      const boxTop = contentOffset;
+      const marginTop = item.reasoningIdx > 0 ? 1 : 0;
+      const boxTop = contentOffset + marginTop;
       const boxHeight = reasoningBox.height;
       const boxBottom = boxTop + boxHeight;
       const reasoningHeaderBox = reasoningBox.getChildren()[0];
@@ -20947,9 +20948,8 @@ class TreeView {
         continue;
       }
       const reasoningHeaderHeight = reasoningHeaderBox.height || 2;
-      const reasoningPaddingTop = 1;
-      if (scrollTop >= boxTop + reasoningPaddingTop && scrollTop < boxBottom - reasoningHeaderHeight) {
-        const offset = scrollTop - boxTop - reasoningPaddingTop;
+      if (scrollTop >= boxTop && scrollTop < boxBottom - reasoningHeaderHeight) {
+        const offset = scrollTop - boxTop;
         reasoningHeaderBox.translateY = offset;
         reasoningHeaderBox.zIndex = 100;
       } else {
@@ -20985,7 +20985,7 @@ class TreeView {
         }
         fileOffset += fileHeight;
       }
-      contentOffset += boxHeight;
+      contentOffset += marginTop + boxHeight;
     }
     this.stickyHeaderBox.visible = false;
     this.stickyHeaderBox.height = 0;
