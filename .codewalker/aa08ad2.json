@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "commit": "aa08ad2",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Rename the CLI package from 'codewalker-cli' to 'codewalk'. Updated package name, bin command, bin file, and keywords to use the shorter name.",
+      "files": [
+        { "path": "packages/cli/package.json", "hunks": [1, 2] },
+        { "path": "packages/cli/bin/codewalk.js", "hunks": [1] }
+      ]
+    }
+  ]
+}
