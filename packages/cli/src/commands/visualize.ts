@@ -1,12 +1,36 @@
 import pc from 'picocolors';
+import * as fs from 'fs';
+import * as path from 'path';
 import { createCliRenderer } from '@opentui/core';
-import { getCurrentBranch, getCommitList, isGitRepo } from '../utils/git.js';
+import { getCurrentBranch, getBranchCommits, isGitRepo } from '../utils/git.js';
 import { loadTrackingFiles, getTrackedCommits, aggregateByReasoning } from '../utils/tracking.js';
 import { createAppState } from '../tui/app.js';
 import { TreeView } from '../tui/tree-view.js';
 
 export interface VisualizeOptions {
   cwd: string;
+}
+
+/**
+ * Load tracking data for the current branch
+ */
+async function loadBranchData(cwd: string) {
+  const branch = getCurrentBranch(cwd);
+  const commits = getBranchCommits(cwd);
+
+  if (commits.length === 0) {
+    return { branch, reasoningGroups: [] };
+  }
+
+  const allTrackedCommits = await loadTrackingFiles(cwd, commits);
+  const trackedCommits = getTrackedCommits(allTrackedCommits);
+
+  if (trackedCommits.length === 0) {
+    return { branch, reasoningGroups: [] };
+  }
+
+  const reasoningGroups = aggregateByReasoning(cwd, trackedCommits);
+  return { branch, reasoningGroups };
 }
 
 export async function visualizeCommand(options: VisualizeOptions): Promise<void> {
@@ -18,31 +42,11 @@ export async function visualizeCommand(options: VisualizeOptions): Promise<void>
     process.exit(1);
   }
 
-  // Load data
+  // Load initial data
   console.log(pc.dim('Loading tracking data...'));
+  const { branch, reasoningGroups } = await loadBranchData(cwd);
 
-  const branch = getCurrentBranch(cwd);
-  const commits = getCommitList(cwd);
-  const allTrackedCommits = await loadTrackingFiles(cwd, commits);
-  const trackedCommits = getTrackedCommits(allTrackedCommits);
-
-  if (trackedCommits.length === 0) {
-    console.log(pc.yellow('No tracked commits found in .codewalker/'));
-    console.log(pc.dim('Run some tasks with Claude Code to generate tracking data.'));
-    return;
-  }
-
-  console.log(pc.dim('Aggregating changes by reasoning...'));
-
-  // Aggregate changes by reasoning (like the PR "By Reasoning" view)
-  const reasoningGroups = aggregateByReasoning(cwd, trackedCommits);
-
-  if (reasoningGroups.length === 0) {
-    console.log(pc.yellow('No changes with diffs found.'));
-    return;
-  }
-
-  // Create OpenTUI renderer
+  // Create OpenTUI renderer (start even if no data - we'll watch for changes)
   console.log(pc.dim('Starting visualizer...'));
 
   const renderer = await createCliRenderer({
@@ -52,11 +56,56 @@ export async function visualizeCommand(options: VisualizeOptions): Promise<void>
     backgroundColor: '#0f0f1a',
   });
 
-  // Create app state
+  // Create app state (may have empty reasoningGroups)
   const state = createAppState(branch, reasoningGroups);
 
   // Create tree view
   const treeView = new TreeView(renderer, state);
+
+  // Track current branch to detect switches
+  let currentBranch = branch;
+
+  // Watch for new tracking files
+  const codewalkerDir = path.join(cwd, '.codewalker');
+  const gitHeadPath = path.join(cwd, '.git', 'HEAD');
+  let trackingWatcher: fs.FSWatcher | null = null;
+  let branchWatcher: fs.FSWatcher | null = null;
+  let debounceTimer: NodeJS.Timeout | null = null;
+
+  const reloadData = async (branchChanged = false) => {
+    const { branch: newBranch, reasoningGroups: newGroups } = await loadBranchData(cwd);
+
+    if (branchChanged || newBranch !== currentBranch) {
+      // Branch changed - update with new branch name and clear state
+      currentBranch = newBranch;
+      treeView.updateData(newGroups, newBranch);
+    } else if (newGroups.length > 0) {
+      // Same branch, just new data
+      treeView.updateData(newGroups);
+    }
+  };
+
+  // Watch .codewalker/ for new tracking files
+  try {
+    trackingWatcher = fs.watch(codewalkerDir, (eventType, filename) => {
+      if (filename && filename.endsWith('.json')) {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => reloadData(), 100);
+      }
+    });
+  } catch {
+    // Directory might not exist yet
+  }
+
+  // Watch .git/HEAD for branch switches
+  try {
+    branchWatcher = fs.watch(gitHeadPath, () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => reloadData(true), 100);
+    });
+  } catch {
+    // .git/HEAD might not be accessible
+  }
 
   // Handle keyboard input
   renderer.keyInput.on('keypress', (event) => {
@@ -64,6 +113,9 @@ export async function visualizeCommand(options: VisualizeOptions): Promise<void>
 
     switch (key) {
       case 'q':
+        if (trackingWatcher) trackingWatcher.close();
+        if (branchWatcher) branchWatcher.close();
+        if (debounceTimer) clearTimeout(debounceTimer);
         treeView.destroy();
         renderer.destroy();
         process.exit(0);

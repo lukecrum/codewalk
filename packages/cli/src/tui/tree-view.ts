@@ -7,6 +7,7 @@ import {
 } from '@opentui/core';
 import type { AppState } from './app.js';
 import type { ParsedHunk } from '../utils/git.js';
+import type { ReasoningGroup } from '../utils/tracking.js';
 
 // Convert hunks to unified diff format for DiffRenderable
 function hunksToUnifiedDiff(filePath: string, hunks: ParsedHunk[]): string {
@@ -161,7 +162,9 @@ export class TreeView {
         continue;
       }
 
-      const boxTop = contentOffset;
+      // Account for marginTop on reasoning boxes (all except first have marginTop: 1)
+      const marginTop = item.reasoningIdx > 0 ? 1 : 0;
+      const boxTop = contentOffset + marginTop;
       const boxHeight = reasoningBox.height;
       const boxBottom = boxTop + boxHeight;
 
@@ -175,7 +178,9 @@ export class TreeView {
       const reasoningHeaderHeight = reasoningHeaderBox.height || 2;
 
       // Check if reasoning header should stick
-      if (scrollTop > boxTop && scrollTop < boxBottom - reasoningHeaderHeight) {
+      // Start sticking when header would scroll off screen
+      if (scrollTop >= boxTop && scrollTop < boxBottom - reasoningHeaderHeight) {
+        // Offset to position header at top of viewport
         const offset = scrollTop - boxTop;
         reasoningHeaderBox.translateY = offset;
         reasoningHeaderBox.zIndex = 100;
@@ -227,7 +232,7 @@ export class TreeView {
         fileOffset += fileHeight;
       }
 
-      contentOffset += boxHeight;
+      contentOffset += marginTop + boxHeight;
     }
 
     // Hide the separate sticky header box (not using it anymore)
@@ -292,19 +297,45 @@ export class TreeView {
   }
 
   private buildContent(): void {
+    // Show empty state message if no reasoning groups
+    if (this.state.reasoningGroups.length === 0) {
+      const emptyBox = new BoxRenderable(this.renderer, {
+        width: '100%',
+        flexDirection: 'column',
+        paddingLeft: 2,
+        paddingTop: 2,
+      });
+
+      const emptyText = new TextRenderable(this.renderer, {
+        content: 'No tracked changes on this branch.',
+        fg: '#888888',
+      });
+      emptyBox.add(emptyText);
+
+      const hintText = new TextRenderable(this.renderer, {
+        content: 'Make some changes with Claude Code to see them here.',
+        fg: '#666666',
+        paddingTop: 1,
+      });
+      emptyBox.add(hintText);
+
+      this.scrollBox.add(emptyBox);
+      return;
+    }
+
     this.state.reasoningGroups.forEach((group, reasoningIdx) => {
       const isExpanded = this.state.expandedReasonings.has(reasoningIdx);
       const isSelected = this.isReasoningSelected(reasoningIdx);
       // Highlight expanded reasoning blocks
       const isHighlighted = isExpanded;
 
-      // Reasoning container
+      // Reasoning container - no paddingTop so sticky header goes all the way to top
       const reasoningBox = new BoxRenderable(this.renderer, {
         width: '100%',
         flexDirection: 'column',
         paddingLeft: 1,
-        paddingTop: 1,
-        backgroundColor: isHighlighted ? '#1a1a3e' : undefined,
+        marginTop: reasoningIdx > 0 ? 1 : 0, // Add spacing between sections (not above first)
+        backgroundColor: isHighlighted ? '#1a1a3e' : '#0f0f1a',
       });
 
       // Clickable reasoning header box (with background for sticky behavior)
@@ -555,7 +586,8 @@ export class TreeView {
     if (newIndex >= 0 && newIndex < this.selectableItems.length) {
       this.state.selectedIndex = newIndex;
       this.buildUI();
-      this.scrollToSelected();
+      // Defer scroll to next tick to ensure layout is computed
+      setTimeout(() => this.scrollToSelected(), 0);
     }
   }
 
@@ -575,8 +607,8 @@ export class TreeView {
 
       if (item && item.type === 'reasoning' && item.reasoningIdx === selectedItem.reasoningIdx) {
         if (selectedItem.type === 'reasoning') {
-          // Scroll to this reasoning
-          this.scrollBox.scrollTop = position;
+          // Scroll to this reasoning - position at top of visible area
+          this.scrollBox.scrollTo(position);
           return;
         }
 
@@ -591,7 +623,8 @@ export class TreeView {
           );
 
           if (fileItem && fileItem.filePath === selectedItem.filePath) {
-            this.scrollBox.scrollTop = position + fileOffset;
+            // Scroll to file - position at top of visible area
+            this.scrollBox.scrollTo(position + fileOffset);
             return;
           }
 
@@ -604,6 +637,21 @@ export class TreeView {
   }
 
   public refresh(): void {
+    this.buildUI();
+  }
+
+  /**
+   * Update the view with new data (e.g., when new tracking files are added or branch changes)
+   */
+  public updateData(reasoningGroups: ReasoningGroup[], branch?: string): void {
+    this.state.reasoningGroups = reasoningGroups;
+    if (branch) {
+      this.state.branch = branch;
+      // Clear expansion state when switching branches
+      this.state.expandedReasonings.clear();
+      this.state.expandedFiles.clear();
+      this.state.selectedIndex = 0;
+    }
     this.buildUI();
   }
 

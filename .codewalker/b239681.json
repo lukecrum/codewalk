@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "commit": "b239681",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Add branch switch detection so visualizer automatically updates when switching git branches. Watches .git/HEAD for changes, reloads data for the new branch, and clears expansion state. Also allows visualizer to start with no data and wait for changes.",
+      "files": [
+        { "path": "packages/cli/src/commands/visualize.ts", "hunks": [1, 2, 3] }
+      ]
+    },
+    {
+      "reasoning": "Update TreeView.updateData() to accept optional branch parameter that triggers a full state reset (clears expansion and selection). Also added empty state UI message when branch has no tracked changes.",
+      "files": [
+        { "path": "packages/cli/src/tui/tree-view.ts", "hunks": [1, 2] }
+      ]
+    }
+  ]
+}

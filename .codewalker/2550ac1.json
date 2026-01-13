@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "commit": "2550ac1",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Fix sticky headers appearing at wrong positions. The position calculations weren't accounting for marginTop on reasoning boxes (all except the first have marginTop: 1). Each subsequent reasoning block's header would stick further down than intended because the cumulative margin was missing from contentOffset.",
+      "files": [
+        { "path": "packages/cli/src/tui/tree-view.ts", "hunks": [1, 3] }
+      ]
+    },
+    {
+      "reasoning": "Remove stale reasoningPaddingTop adjustment that caused headers to be cut off at the top and created gaps. The code was subtracting 1 from positions based on old paddingTop logic that no longer exists, causing misalignment between reasoning headers and file headers below them.",
+      "files": [
+        { "path": "packages/cli/src/tui/tree-view.ts", "hunks": [2] }
+      ]
+    }
+  ]
+}

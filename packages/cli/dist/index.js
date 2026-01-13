@@ -2048,6 +2048,21 @@ var CLAUDE_MD_CONTENT = `# Code Walker
 
 See \`.claude/skills/codewalker.md\` for the complete schema and examples.
 `;
+var SETTINGS_CONTENT = {
+  hooks: {
+    Stop: [
+      {
+        hooks: [
+          {
+            type: "prompt",
+            prompt: "Check if the assistant made code changes in this session. If code changes were made, verify: 1) Changes were committed with git, 2) A tracking file was created at .codewalker/<commit-hash>.json, 3) The tracking file was also committed. If any of these are missing, block stopping and instruct to complete the codewalker workflow. If no code changes were made, or all steps are complete, approve stopping.",
+            timeout: 30
+          }
+        ]
+      }
+    ]
+  }
+};
 async function fileExists(filePath) {
   try {
     await fs.access(filePath);
@@ -2092,6 +2107,27 @@ async function initCommand(options) {
   } else {
     console.log(import_picocolors.default.yellow("\u25CB") + " .codewalker/ directory already exists");
   }
+  const settingsPath = path.join(cwd, ".claude", "settings.local.json");
+  let existingSettings = {};
+  try {
+    const content = await fs.readFile(settingsPath, "utf-8");
+    existingSettings = JSON.parse(content);
+  } catch {}
+  const hasStopHook = existingSettings.hooks && typeof existingSettings.hooks === "object" && "Stop" in existingSettings.hooks;
+  if (!hasStopHook) {
+    const mergedSettings = {
+      ...existingSettings,
+      hooks: {
+        ...existingSettings.hooks || {},
+        ...SETTINGS_CONTENT.hooks
+      }
+    };
+    await fs.writeFile(settingsPath, JSON.stringify(mergedSettings, null, 2) + `
+`);
+    console.log(import_picocolors.default.green("\u2713") + " Added Stop hook to .claude/settings.local.json");
+  } else {
+    console.log(import_picocolors.default.yellow("\u25CB") + " Stop hook already configured, skipping");
+  }
   console.log(import_picocolors.default.bold(`
 CodeWalker initialized successfully!`));
   console.log(`
@@ -2103,6 +2139,8 @@ Next steps:`);
 
 // src/commands/visualize.ts
 var import_picocolors2 = __toESM(require_picocolors(), 1);
+import * as fs4 from "fs";
+import * as path5 from "path";
 
 // ../../node_modules/@opentui/core/index-zj0wwh9d.js
 import { Buffer as Buffer2 } from "buffer";
@@ -20592,9 +20630,15 @@ function getCurrentBranch(cwd) {
     throw new Error("Not a git repository or git is not installed");
   }
 }
-function getCommitList(cwd) {
+function getBranchCommits(cwd) {
+  const currentBranch = getCurrentBranch(cwd);
+  const mainBranch = getMainBranch(cwd);
+  if (currentBranch === mainBranch) {
+    return [];
+  }
   try {
-    const output = execSync('git log --format="%H|%h|%an|%s" --first-parent', {
+    const mergeBase = getMergeBase(cwd, mainBranch, "HEAD");
+    const output = execSync(`git log --format="%H|%h|%an|%s" --first-parent ${mergeBase}..HEAD`, {
       cwd,
       encoding: "utf-8"
     });
@@ -20609,7 +20653,7 @@ function getCommitList(cwd) {
       };
     });
   } catch {
-    throw new Error("Failed to get commit list");
+    return [];
   }
 }
 function isGitRepo(cwd) {
@@ -20618,6 +20662,27 @@ function isGitRepo(cwd) {
     return true;
   } catch {
     return false;
+  }
+}
+function getMainBranch(cwd) {
+  try {
+    const result = execSync('git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null || echo "refs/heads/main"', {
+      cwd,
+      encoding: "utf-8"
+    }).trim();
+    return result.replace("refs/remotes/origin/", "").replace("refs/heads/", "");
+  } catch {
+    return "main";
+  }
+}
+function getMergeBase(cwd, branch1, branch2) {
+  try {
+    return execSync(`git merge-base ${branch1} ${branch2}`, {
+      cwd,
+      encoding: "utf-8"
+    }).trim();
+  } catch {
+    throw new Error(`Failed to find merge base between ${branch1} and ${branch2}`);
   }
 }
 function getCommitDiff(cwd, commitSha) {
@@ -20873,7 +20938,8 @@ class TreeView {
         contentOffset += reasoningBox.height;
         continue;
       }
-      const boxTop = contentOffset;
+      const marginTop = item.reasoningIdx > 0 ? 1 : 0;
+      const boxTop = contentOffset + marginTop;
       const boxHeight = reasoningBox.height;
       const boxBottom = boxTop + boxHeight;
       const reasoningHeaderBox = reasoningBox.getChildren()[0];
@@ -20882,7 +20948,7 @@ class TreeView {
         continue;
       }
       const reasoningHeaderHeight = reasoningHeaderBox.height || 2;
-      if (scrollTop > boxTop && scrollTop < boxBottom - reasoningHeaderHeight) {
+      if (scrollTop >= boxTop && scrollTop < boxBottom - reasoningHeaderHeight) {
         const offset = scrollTop - boxTop;
         reasoningHeaderBox.translateY = offset;
         reasoningHeaderBox.zIndex = 100;
@@ -20919,7 +20985,7 @@ class TreeView {
         }
         fileOffset += fileHeight;
       }
-      contentOffset += boxHeight;
+      contentOffset += marginTop + boxHeight;
     }
     this.stickyHeaderBox.visible = false;
     this.stickyHeaderBox.height = 0;
@@ -20962,6 +21028,27 @@ class TreeView {
     this.headerBox.add(headerText);
   }
   buildContent() {
+    if (this.state.reasoningGroups.length === 0) {
+      const emptyBox = new BoxRenderable(this.renderer, {
+        width: "100%",
+        flexDirection: "column",
+        paddingLeft: 2,
+        paddingTop: 2
+      });
+      const emptyText = new TextRenderable(this.renderer, {
+        content: "No tracked changes on this branch.",
+        fg: "#888888"
+      });
+      emptyBox.add(emptyText);
+      const hintText = new TextRenderable(this.renderer, {
+        content: "Make some changes with Claude Code to see them here.",
+        fg: "#666666",
+        paddingTop: 1
+      });
+      emptyBox.add(hintText);
+      this.scrollBox.add(emptyBox);
+      return;
+    }
     this.state.reasoningGroups.forEach((group, reasoningIdx) => {
       const isExpanded = this.state.expandedReasonings.has(reasoningIdx);
       const isSelected = this.isReasoningSelected(reasoningIdx);
@@ -20970,8 +21057,8 @@ class TreeView {
         width: "100%",
         flexDirection: "column",
         paddingLeft: 1,
-        paddingTop: 1,
-        backgroundColor: isHighlighted ? "#1a1a3e" : undefined
+        marginTop: reasoningIdx > 0 ? 1 : 0,
+        backgroundColor: isHighlighted ? "#1a1a3e" : "#0f0f1a"
       });
       const defaultBg = isHighlighted ? "#2a2a4e" : "#0f0f1a";
       const hoverBg = "#3a3a5e";
@@ -21175,7 +21262,7 @@ class TreeView {
     if (newIndex >= 0 && newIndex < this.selectableItems.length) {
       this.state.selectedIndex = newIndex;
       this.buildUI();
-      this.scrollToSelected();
+      setTimeout(() => this.scrollToSelected(), 0);
     }
   }
   scrollToSelected() {
@@ -21188,7 +21275,7 @@ class TreeView {
       const item = this.itemRenderables.find((it) => it.type === "reasoning" && it.renderable === reasoningBox);
       if (item && item.type === "reasoning" && item.reasoningIdx === selectedItem.reasoningIdx) {
         if (selectedItem.type === "reasoning") {
-          this.scrollBox.scrollTop = position;
+          this.scrollBox.scrollTo(position);
           return;
         }
         const reasoningChildren = reasoningBox.getChildren();
@@ -21197,7 +21284,7 @@ class TreeView {
           const fileBox = reasoningChildren[i];
           const fileItem = this.itemRenderables.find((it) => it.type === "file" && it.renderable === fileBox);
           if (fileItem && fileItem.filePath === selectedItem.filePath) {
-            this.scrollBox.scrollTop = position + fileOffset;
+            this.scrollBox.scrollTo(position + fileOffset);
             return;
           }
           fileOffset += fileBox.height;
@@ -21209,12 +21296,36 @@ class TreeView {
   refresh() {
     this.buildUI();
   }
+  updateData(reasoningGroups, branch) {
+    this.state.reasoningGroups = reasoningGroups;
+    if (branch) {
+      this.state.branch = branch;
+      this.state.expandedReasonings.clear();
+      this.state.expandedFiles.clear();
+      this.state.selectedIndex = 0;
+    }
+    this.buildUI();
+  }
   destroy() {
     this.renderer.root.remove(this.rootBox.id);
   }
 }
 
 // src/commands/visualize.ts
+async function loadBranchData(cwd) {
+  const branch = getCurrentBranch(cwd);
+  const commits = getBranchCommits(cwd);
+  if (commits.length === 0) {
+    return { branch, reasoningGroups: [] };
+  }
+  const allTrackedCommits = await loadTrackingFiles(cwd, commits);
+  const trackedCommits = getTrackedCommits(allTrackedCommits);
+  if (trackedCommits.length === 0) {
+    return { branch, reasoningGroups: [] };
+  }
+  const reasoningGroups = aggregateByReasoning(cwd, trackedCommits);
+  return { branch, reasoningGroups };
+}
 async function visualizeCommand(options) {
   const { cwd } = options;
   if (!isGitRepo(cwd)) {
@@ -21222,21 +21333,7 @@ async function visualizeCommand(options) {
     process.exit(1);
   }
   console.log(import_picocolors2.default.dim("Loading tracking data..."));
-  const branch = getCurrentBranch(cwd);
-  const commits = getCommitList(cwd);
-  const allTrackedCommits = await loadTrackingFiles(cwd, commits);
-  const trackedCommits = getTrackedCommits(allTrackedCommits);
-  if (trackedCommits.length === 0) {
-    console.log(import_picocolors2.default.yellow("No tracked commits found in .codewalker/"));
-    console.log(import_picocolors2.default.dim("Run some tasks with Claude Code to generate tracking data."));
-    return;
-  }
-  console.log(import_picocolors2.default.dim("Aggregating changes by reasoning..."));
-  const reasoningGroups = aggregateByReasoning(cwd, trackedCommits);
-  if (reasoningGroups.length === 0) {
-    console.log(import_picocolors2.default.yellow("No changes with diffs found."));
-    return;
-  }
+  const { branch, reasoningGroups } = await loadBranchData(cwd);
   console.log(import_picocolors2.default.dim("Starting visualizer..."));
   const renderer = await createCliRenderer({
     exitOnCtrlC: true,
@@ -21246,10 +21343,47 @@ async function visualizeCommand(options) {
   });
   const state = createAppState(branch, reasoningGroups);
   const treeView = new TreeView(renderer, state);
+  let currentBranch = branch;
+  const codewalkerDir = path5.join(cwd, ".codewalker");
+  const gitHeadPath = path5.join(cwd, ".git", "HEAD");
+  let trackingWatcher = null;
+  let branchWatcher = null;
+  let debounceTimer = null;
+  const reloadData = async (branchChanged = false) => {
+    const { branch: newBranch, reasoningGroups: newGroups } = await loadBranchData(cwd);
+    if (branchChanged || newBranch !== currentBranch) {
+      currentBranch = newBranch;
+      treeView.updateData(newGroups, newBranch);
+    } else if (newGroups.length > 0) {
+      treeView.updateData(newGroups);
+    }
+  };
+  try {
+    trackingWatcher = fs4.watch(codewalkerDir, (eventType, filename) => {
+      if (filename && filename.endsWith(".json")) {
+        if (debounceTimer)
+          clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => reloadData(), 100);
+      }
+    });
+  } catch {}
+  try {
+    branchWatcher = fs4.watch(gitHeadPath, () => {
+      if (debounceTimer)
+        clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => reloadData(true), 100);
+    });
+  } catch {}
   renderer.keyInput.on("keypress", (event) => {
     const key = event.name;
     switch (key) {
       case "q":
+        if (trackingWatcher)
+          trackingWatcher.close();
+        if (branchWatcher)
+          branchWatcher.close();
+        if (debounceTimer)
+          clearTimeout(debounceTimer);
         treeView.destroy();
         renderer.destroy();
         process.exit(0);
