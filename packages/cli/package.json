@@ -1,10 +1,10 @@
 {
-  "name": "codewalker-cli",
+  "name": "codewalk",
   "version": "0.1.0",
   "type": "module",
   "description": "CLI tool for visualizing AI-assisted code changes",
   "bin": {
-    "codewalker": "./bin/codewalker.js"
+    "codewalk": "./bin/codewalk.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -31,7 +31,7 @@
     "bin"
   ],
   "keywords": [
-    "codewalker",
+    "codewalk",
     "code-review",
     "ai",
     "claude",
