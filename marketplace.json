@@ -1,0 +1,24 @@
+{
+  "name": "codewalk-marketplace",
+  "owner": {
+    "name": "Luke Crum",
+    "email": "luke@example.com"
+  },
+  "metadata": {
+    "description": "Official marketplace for codewalk - AI-assisted code change tracking",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "codewalk",
+      "source": "./packages/claude-plugin",
+      "description": "Track and visualize AI-assisted code changes with structured reasoning. Creates .codewalk/<commit>.json files that explain why changes were made.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Luke Crum"
+      },
+      "category": "developer-tools",
+      "tags": ["code-review", "git", "tracking", "ai", "visualization"]
+    }
+  ]
+}
