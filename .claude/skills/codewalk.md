@@ -110,6 +110,7 @@ I'll make two changes:
 </ASSISTANT>
 
 <TRACK file=".codewalk/a1b2c3d.json">
+```json
 {
   "version": 1,
   "commit": "a1b2c3d",
@@ -129,6 +130,7 @@ I'll make two changes:
     }
   ]
 }
+```
 </TRACK>
 
 <USER>
@@ -157,6 +159,7 @@ Then update the tracking file to reflect the final state. The reasoning now desc
 </NOTE>
 
 <TRACK file=".codewalk/a1b2c3d.json">
+```json
 {
   "version": 1,
   "commit": "a1b2c3d",
@@ -176,6 +179,7 @@ Then update the tracking file to reflect the final state. The reasoning now desc
     }
   ]
 }
+```
 </TRACK>
 
 ## Walkthrough Example: Multiple Files
@@ -273,6 +277,7 @@ Since this is all one logical change ("add dark mode"), group everything under O
 </NOTE>
 
 <TRACK file=".codewalk/c3d4e5f.json">
+```json
 {
   "version": 1,
   "commit": "c3d4e5f",
@@ -288,6 +293,7 @@ Since this is all one logical change ("add dark mode"), group everything under O
     }
   ]
 }
+```
 </TRACK>
 
 <USER>
@@ -364,6 +370,7 @@ Again, this is one logical change affecting all three files. Group under ONE rea
 </NOTE>
 
 <TRACK file=".codewalk/d4e5f6g.json">
+```json
 {
   "version": 1,
   "commit": "d4e5f6g",
@@ -379,4 +386,5 @@ Again, this is one logical change affecting all three files. Group under ONE rea
     }
   ]
 }
+```
 </TRACK>
