@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "commit": "4caef2e",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Create shared @codewalker/types package to eliminate code duplication. The types were previously duplicated between the web app and CLI. Moving them to a shared package ensures type consistency across all applications.",
+      "files": [
+        { "path": "packages/types/package.json", "hunks": [1] },
+        { "path": "packages/types/src/index.ts", "hunks": [1] },
+        { "path": "packages/types/tsconfig.json", "hunks": [1] }
+      ]
+    },
+    {
+      "reasoning": "Move Next.js web app from root to apps/web for proper monorepo organization. This separates the web application from monorepo configuration and allows independent versioning and deployment.",
+      "files": [
+        { "path": "apps/web/package.json", "hunks": [1] },
+        { "path": "apps/web/tsconfig.json", "hunks": [1] }
+      ]
+    },
+    {
+      "reasoning": "Move CLI from packages/cli to apps/cli. The CLI is an application, not a library, so it belongs in the apps directory following standard monorepo conventions.",
+      "files": [
+        { "path": "apps/cli/package.json", "hunks": [1] }
+      ]
+    },
+    {
+      "reasoning": "Update root package.json to be a pure monorepo orchestrator. Removed all app-specific dependencies (moved to apps/web) and updated workspaces to include both apps/* and packages/*.",
+      "files": [
+        { "path": "package.json", "hunks": [1] },
+        { "path": "tsconfig.json", "hunks": [1] },
+        { "path": ".gitignore", "hunks": [1, 2, 3] }
+      ]
+    },
+    {
+      "reasoning": "Update imports across web app and CLI to use the shared @codewalker/types package instead of local type definitions.",
+      "files": [
+        { "path": "apps/web/app/api/github/pr-diff/route.ts", "hunks": [1] },
+        { "path": "apps/web/lib/github.ts", "hunks": [1] },
+        { "path": "apps/web/components/TrackingVisualizer.tsx", "hunks": [1] },
+        { "path": "apps/cli/src/utils/tracking.ts", "hunks": [1] }
+      ]
+    }
+  ]
+}
