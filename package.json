@@ -1,23 +1,23 @@
 {
-  "name": "codewalker",
+  "name": "codewalk",
   "version": "1.0.0",
   "private": true,
-  "description": "CodeWalker monorepo - AI-assisted code change visualization",
+  "description": "codewalk monorepo - AI-assisted code change visualization",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev -w @codewalker/web",
-    "build": "npm run build -w @codewalker/types && npm run build -w @codewalker/web",
-    "build:types": "npm run build -w @codewalker/types",
-    "build:web": "npm run build -w @codewalker/web",
+    "dev": "npm run dev -w @codewalk/web",
+    "build": "npm run build -w @codewalk/types && npm run build -w @codewalk/web",
+    "build:types": "npm run build -w @codewalk/types",
+    "build:web": "npm run build -w @codewalk/web",
     "build:cli": "npm run build -w codewalk",
-    "start": "npm run start -w @codewalker/web",
-    "lint": "npm run lint -w @codewalker/web",
+    "start": "npm run start -w @codewalk/web",
+    "lint": "npm run lint -w @codewalk/web",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
-  "keywords": ["codewalker", "monorepo", "code-review", "ai"],
+  "keywords": ["codewalk", "monorepo", "code-review", "ai"],
   "author": "",
   "license": "MIT"
 }

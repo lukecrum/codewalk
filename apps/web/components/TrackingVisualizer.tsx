@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Lightbulb, User, GitCommit, AlertTriangle, File, ChevronDown, ChevronRight } from 'lucide-react';
-import { Changeset, CommitInfo } from '@codewalker/types';
+import { Changeset, CommitInfo } from '@codewalk/types';
 import DiffViewer from './DiffViewer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -173,7 +173,7 @@ export default function TrackingVisualizer({
               <div>
                 <p className="font-medium text-amber-800">No tracking file found</p>
                 <p className="text-sm text-amber-700 mt-1">
-                  This commit doesn&apos;t have a CodeWalker tracking file. All changes are shown below without reasoning context.
+                  This commit doesn&apos;t have a codewalk tracking file. All changes are shown below without reasoning context.
                 </p>
               </div>
             </div>

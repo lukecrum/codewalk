@@ -2,9 +2,9 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import pc from 'picocolors';
 
-const SKILL_TEMPLATE = `# Code Walker
+const SKILL_TEMPLATE = `# codewalk
 
-You are Code Walker, an AI programming assistant built on top of Claude Code.
+You are codewalk, an AI programming assistant built on top of Claude Code.
 
 Your purpose is to give the user more visibility into the changes you are making.
 
@@ -75,19 +75,19 @@ If it's a distinct new task, create a new commit and new tracking file.
 ## Instructions
 
 1. Before committing, check if a git repo exists with \`git status\`. Only run \`git init\` if there isn't one.
-2. After completing a task, commit your changes and automatically create a tracking file at \`.codewalker/<commit-hash>.json\`
+2. After completing a task, commit your changes and automatically create a tracking file at \`.codewalk/<commit-hash>.json\`
 3. Group hunks by their logical purpose—one reasoning per logical change, even if it spans multiple hunks or multiple files. If a single user request results in changes across several files, those should typically be one change with one reasoning, not separate changes per file.
 4. Write reasoning that explains *why*, not just *what* (the diff already shows what)
 5. If a follow-up request refines previous work, amend the commit and update the tracking file
 6. If a follow-up request is a new task, create a new commit and new tracking file
-7. After writing the tracking file, validate it with: \`python3 -c "import json; json.load(open('.codewalker/<commit-hash>.json'))"\`
+7. After writing the tracking file, validate it with: \`python3 -c "import json; json.load(open('.codewalk/<commit-hash>.json'))"\`
 
 Do not wait for the user to ask for the tracking file—create it automatically as part of finishing each task.
 
 **Important:** Always complete the tracking step after every task, even in long conversations with multiple tasks. Do not skip this step regardless of conversation length or number of previous tasks.
 `;
 
-const CLAUDE_MD_CONTENT = `# Code Walker
+const CLAUDE_MD_CONTENT = `# codewalk
 
 **CRITICAL REQUIREMENT**: You MUST create git commits for your changes AND create tracking files after EVERY task. No exceptions.
 
@@ -95,13 +95,13 @@ const CLAUDE_MD_CONTENT = `# Code Walker
 1. Make your code changes using Write/Edit tools
 2. **COMMIT the changes**: \`git add -A && git commit -m "descriptive message"\`
 3. Get the commit hash: \`git rev-parse --short HEAD\`
-4. **IMMEDIATELY** create \`.codewalker/<commit-hash>.json\` with the tracking data
-5. Commit the tracking file: \`git add .codewalker/<hash>.json && git commit -m "Add tracking file for <hash>"\`
+4. **IMMEDIATELY** create \`.codewalk/<commit-hash>.json\` with the tracking data
+5. Commit the tracking file: \`git add .codewalk/<hash>.json && git commit -m "Add tracking file for <hash>"\`
 6. Only THEN respond to the user
 
 **DO NOT** skip commits. **DO NOT** respond to the user until both the code commit AND tracking file commit are done.
 
-See \`.claude/skills/codewalker.md\` for the complete schema and examples.
+See \`.claude/skills/codewalk.md\` for the complete schema and examples.
 `;
 
 const SETTINGS_CONTENT = {
@@ -111,7 +111,7 @@ const SETTINGS_CONTENT = {
         hooks: [
           {
             type: "prompt",
-            prompt: "Check if the assistant made code changes in this session. If code changes were made, verify: 1) Changes were committed with git, 2) A tracking file was created at .codewalker/<commit-hash>.json, 3) The tracking file was also committed. If any of these are missing, block stopping and instruct to complete the codewalker workflow. If no code changes were made, or all steps are complete, approve stopping.",
+            prompt: "Check if the assistant made code changes in this session. If code changes were made, verify: 1) Changes were committed with git, 2) A tracking file was created at .codewalk/<commit-hash>.json, 3) The tracking file was also committed. If any of these are missing, block stopping and instruct to complete the codewalk workflow. If no code changes were made, or all steps are complete, approve stopping.",
             timeout: 30
           }
         ]
@@ -136,21 +136,21 @@ export interface InitOptions {
 export async function initCommand(options: InitOptions): Promise<void> {
   const { cwd } = options;
 
-  console.log(pc.bold('Initializing CodeWalker...\n'));
+  console.log(pc.bold('Initializing codewalk...\n'));
 
   // 1. Create .claude/skills directory
   const skillsDir = path.join(cwd, '.claude', 'skills');
   await fs.mkdir(skillsDir, { recursive: true });
 
   // 2. Create skill file (idempotent)
-  const skillPath = path.join(skillsDir, 'codewalker.md');
+  const skillPath = path.join(skillsDir, 'codewalk.md');
   const skillExists = await fileExists(skillPath);
 
   if (!skillExists) {
     await fs.writeFile(skillPath, SKILL_TEMPLATE);
-    console.log(pc.green('✓') + ' Created .claude/skills/codewalker.md');
+    console.log(pc.green('✓') + ' Created .claude/skills/codewalk.md');
   } else {
-    console.log(pc.yellow('○') + ' .claude/skills/codewalker.md already exists, skipping');
+    console.log(pc.yellow('○') + ' .claude/skills/codewalk.md already exists, skipping');
   }
 
   // 3. Update CLAUDE.md (idempotent)
@@ -163,25 +163,25 @@ export async function initCommand(options: InitOptions): Promise<void> {
     // File doesn't exist, will create
   }
 
-  if (!claudeContent.includes('.claude/skills/codewalker.md')) {
+  if (!claudeContent.includes('.claude/skills/codewalk.md')) {
     const newContent = claudeContent
       ? claudeContent + '\n\n' + CLAUDE_MD_CONTENT
       : CLAUDE_MD_CONTENT;
     await fs.writeFile(claudePath, newContent);
-    console.log(pc.green('✓') + ' Updated CLAUDE.md with CodeWalker instructions');
+    console.log(pc.green('✓') + ' Updated CLAUDE.md with codewalk instructions');
   } else {
-    console.log(pc.yellow('○') + ' CLAUDE.md already references CodeWalker, skipping');
+    console.log(pc.yellow('○') + ' CLAUDE.md already references codewalk, skipping');
   }
 
-  // 4. Create .codewalker directory
-  const codewalkerDir = path.join(cwd, '.codewalker');
-  const codewalkerExists = await fileExists(codewalkerDir);
-  await fs.mkdir(codewalkerDir, { recursive: true });
+  // 4. Create .codewalk directory
+  const codewalkDir = path.join(cwd, '.codewalk');
+  const codewalkExists = await fileExists(codewalkDir);
+  await fs.mkdir(codewalkDir, { recursive: true });
 
-  if (!codewalkerExists) {
-    console.log(pc.green('✓') + ' Created .codewalker/ directory');
+  if (!codewalkExists) {
+    console.log(pc.green('✓') + ' Created .codewalk/ directory');
   } else {
-    console.log(pc.yellow('○') + ' .codewalker/ directory already exists');
+    console.log(pc.yellow('○') + ' .codewalk/ directory already exists');
   }
 
   // 5. Create/update settings.local.json with Stop hook
@@ -213,9 +213,9 @@ export async function initCommand(options: InitOptions): Promise<void> {
     console.log(pc.yellow('○') + ' Stop hook already configured, skipping');
   }
 
-  console.log(pc.bold('\nCodeWalker initialized successfully!'));
+  console.log(pc.bold('\ncodewalk initialized successfully!'));
   console.log('\nNext steps:');
   console.log('  1. Start Claude Code in this directory');
   console.log('  2. Make changes - Claude will automatically track them');
-  console.log('  3. Run ' + pc.cyan('codewalker visualize') + ' to browse changes');
+  console.log('  3. Run ' + pc.cyan('codewalk visualize') + ' to browse changes');
 }

@@ -3,8 +3,8 @@ import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 
 export const metadata: Metadata = {
-  title: "CodeWalker Visualizer",
-  description: "Visualize code changes tracked by the CodeWalker skill",
+  title: "codewalk Visualizer",
+  description: "Visualize code changes tracked by the codewalk skill",
 };
 
 export default function RootLayout({

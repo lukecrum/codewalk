@@ -15,7 +15,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@codewalker/types": "*",
+    "@codewalk/types": "*",
     "@opentui/core": "^0.1.69",
     "commander": "^12.0.0",
     "picocolors": "^1.0.0"

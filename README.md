@@ -1,13 +1,13 @@
-# CodeWalker Visualizer
+# codewalk Visualizer
 
-A Next.js web application that visualizes code changes tracked by the [CodeWalker skill](./.claude/skills/codewalker.md) in GitHub pull requests.
+A Next.js web application that visualizes code changes tracked by the [codewalk skill](./.claude/skills/codewalk.md) in GitHub pull requests.
 
 ## Features
 
 - **GitHub Integration**: Browse pull requests from any GitHub repository
 - **Commit Tracking**: View all commits within a pull request
 - **Change Visualization**: See code changes with syntax highlighting
-- **CodeWalker Support**: Display structured explanations from `.codewalker/*.json` tracking files
+- **codewalk Support**: Display structured explanations from `.codewalk/*.json` tracking files
 - **Grouped Changes**: View hunks grouped by logical purpose with reasoning
 
 ## Getting Started
@@ -53,16 +53,16 @@ npm run dev
    - Click on a commit to view detailed changes
 
 4. **Visualize Changes**:
-   - If a `.codewalker/<commit-hash>.json` file exists, changes are grouped by logical purpose
+   - If a `.codewalk/<commit-hash>.json` file exists, changes are grouped by logical purpose
    - Each change includes:
      - **Reasoning**: Why the change was made
      - **Files**: Which files were affected
      - **Hunks**: The specific code changes with line numbers
    - If no tracking file exists, all diffs are shown
 
-## CodeWalker Tracking Files
+## codewalk Tracking Files
 
-This app reads tracking files from `.codewalker/<commit-hash>.json` in your repository. These files are created by the CodeWalker skill and follow this schema:
+This app reads tracking files from `.codewalk/<commit-hash>.json` in your repository. These files are created by the codewalk skill and follow this schema:
 
 ```typescript
 type Changeset = {
@@ -117,6 +117,14 @@ npm start
 
 # Run linter
 npm run lint
+```
+
+## Claude Marketplace Plugin
+
+This project includes a Claude marketplace plugin at `packages/claude-plugin/` for external distribution. Install it with:
+
+```
+claude plugin install codewalk
 ```
 
 ## License

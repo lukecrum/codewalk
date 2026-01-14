@@ -49,7 +49,7 @@ export default function RepoLayout({ children }: { children: React.ReactNode }) 
                 <div className="p-1.5 rounded-lg bg-primary/10">
                   <GitBranch className="h-4 w-4 text-primary" />
                 </div>
-                <span className="font-semibold">CodeWalker</span>
+                <span className="font-semibold">codewalk</span>
               </Link>
 
               {/* Breadcrumb */}

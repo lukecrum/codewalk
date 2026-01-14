@@ -66,7 +66,7 @@ export async function visualizeCommand(options: VisualizeOptions): Promise<void>
   let currentBranch = branch;
 
   // Watch for new tracking files
-  const codewalkerDir = path.join(cwd, '.codewalker');
+  const codewalkDir = path.join(cwd, '.codewalk');
   const gitHeadPath = path.join(cwd, '.git', 'HEAD');
   let trackingWatcher: fs.FSWatcher | null = null;
   let branchWatcher: fs.FSWatcher | null = null;
@@ -85,9 +85,9 @@ export async function visualizeCommand(options: VisualizeOptions): Promise<void>
     }
   };
 
-  // Watch .codewalker/ for new tracking files
+  // Watch .codewalk/ for new tracking files
   try {
-    trackingWatcher = fs.watch(codewalkerDir, (eventType, filename) => {
+    trackingWatcher = fs.watch(codewalkDir, (eventType, filename) => {
       if (filename && filename.endsWith('.json')) {
         if (debounceTimer) clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => reloadData(), 100);

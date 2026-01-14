@@ -1,6 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import type { Changeset } from '@codewalker/types';
+import type { Changeset } from '@codewalk/types';
 import type { CommitInfo, FileDiff, ParsedHunk } from './git.js';
 import { getCommitFileDiffs } from './git.js';
 
@@ -27,7 +27,7 @@ export async function loadTrackingFiles(
   const result: TrackedCommit[] = [];
 
   for (const commit of commits) {
-    const trackingPath = path.join(cwd, '.codewalker', `${commit.shortSha}.json`);
+    const trackingPath = path.join(cwd, '.codewalk', `${commit.shortSha}.json`);
     let tracking: Changeset | null = null;
 
     try {

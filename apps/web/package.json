@@ -1,5 +1,5 @@
 {
-  "name": "@codewalker/web",
+  "name": "@codewalk/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@codewalker/types": "*",
+    "@codewalk/types": "*",
     "@octokit/rest": "^22.0.1",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-scroll-area": "^1.2.10",

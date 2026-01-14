@@ -6,13 +6,13 @@ import { visualizeCommand } from './commands/visualize.js';
 const program = new Command();
 
 program
-  .name('codewalker')
+  .name('codewalk')
   .description('CLI tool for visualizing AI-assisted code changes')
   .version('0.1.0');
 
 program
   .command('init')
-  .description('Initialize CodeWalker in the current project')
+  .description('Initialize codewalk in the current project')
   .action(async () => {
     try {
       await initCommand({ cwd: process.cwd() });

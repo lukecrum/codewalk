@@ -27,7 +27,7 @@ export default function Home() {
                 <GitBranch className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold">CodeWalker</h1>
+                <h1 className="text-lg font-semibold">codewalk</h1>
                 <p className="text-xs text-muted-foreground">Visualize code changes with context</p>
               </div>
             </div>
@@ -57,7 +57,7 @@ export default function Home() {
                   <GitBranch className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-semibold">CodeWalker</h1>
+                  <h1 className="text-lg font-semibold">codewalk</h1>
                   <p className="text-xs text-muted-foreground">Visualize code changes with context</p>
                 </div>
               </div>
@@ -74,7 +74,7 @@ export default function Home() {
                 Code reviews that make sense
               </h2>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-                CodeWalker groups code changes by their reasoning, so you can understand
+                codewalk groups code changes by their reasoning, so you can understand
                 the &quot;why&quot; behind every line &mdash; not just the &quot;what&quot;.
               </p>
               <SignInButton />
@@ -139,7 +139,7 @@ export default function Home() {
                       <div className="flex-1">
                         <h4 className="font-semibold mb-2">Add <code className="text-sm bg-muted px-1.5 py-0.5 rounded">CLAUDE.md</code> to your repo root</h4>
                         <p className="text-sm text-muted-foreground mb-4">
-                          This file tells Claude Code to follow the CodeWalker workflow and create tracking files.
+                          This file tells Claude Code to follow the codewalk workflow and create tracking files.
                         </p>
                         <a
                           href="/templates/CLAUDE.md"
@@ -161,17 +161,17 @@ export default function Home() {
                         2
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-semibold mb-2">Add <code className="text-sm bg-muted px-1.5 py-0.5 rounded">.claude/skills/codewalker.md</code></h4>
+                        <h4 className="font-semibold mb-2">Add <code className="text-sm bg-muted px-1.5 py-0.5 rounded">.claude/skills/codewalk.md</code></h4>
                         <p className="text-sm text-muted-foreground mb-4">
                           This skill file defines the tracking file schema and provides detailed examples for Claude.
                         </p>
                         <a
-                          href="/templates/codewalker.md"
-                          download="codewalker.md"
+                          href="/templates/codewalk.md"
+                          download="codewalk.md"
                           className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-medium transition-colors"
                         >
                           <Download className="h-4 w-4" />
-                          Download codewalker.md
+                          Download codewalk.md
                         </a>
                       </div>
                     </div>
@@ -188,7 +188,7 @@ export default function Home() {
                         <h4 className="font-semibold mb-2">Start coding with Claude Code</h4>
                         <p className="text-sm text-muted-foreground">
                           That&apos;s it! When you use Claude Code in your repo, it will automatically create
-                          tracking files in <code className="text-xs bg-muted px-1.5 py-0.5 rounded">.codewalker/</code> for
+                          tracking files in <code className="text-xs bg-muted px-1.5 py-0.5 rounded">.codewalk/</code> for
                           each commit. Push your changes and view them here with full reasoning context.
                         </p>
                       </div>
@@ -222,7 +222,7 @@ export default function Home() {
                 <GitBranch className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold">CodeWalker</h1>
+                <h1 className="text-lg font-semibold">codewalk</h1>
                 <p className="text-xs text-muted-foreground">Visualize code changes with context</p>
               </div>
             </div>

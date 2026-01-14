@@ -1,0 +1,10 @@
+{
+  "trigger": "Stop",
+  "hooks": [
+    {
+      "type": "prompt",
+      "prompt": "Check if the assistant made code changes in this session. If code changes were made, verify: 1) Changes were committed with git, 2) A tracking file was created at .codewalk/<commit-hash>.json, 3) The tracking file was also committed. If any of these are missing, block stopping and instruct to complete the codewalk workflow. If no code changes were made, or all steps are complete, approve stopping.",
+      "timeout": 30
+    }
+  ]
+}

@@ -288,7 +288,7 @@ export class TreeView {
 
     const totalChanges = this.state.reasoningGroups.length;
     const headerText = new TextRenderable(this.renderer, {
-      content: ` CodeWalker - ${this.state.branch} (${totalChanges} logical changes)`,
+      content: ` codewalk - ${this.state.branch} (${totalChanges} logical changes)`,
       fg: '#88ccff',
       paddingTop: 0,
       paddingLeft: 1,

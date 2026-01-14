@@ -1,5 +1,5 @@
 import { Octokit } from '@octokit/rest';
-import { CommitInfo, FileDiff, ParsedHunk } from '@codewalker/types';
+import { CommitInfo, FileDiff, ParsedHunk } from '@codewalk/types';
 
 export function getOctokit(token?: string) {
   return new Octokit({
@@ -157,7 +157,7 @@ export async function getTrackingFile(
     const { data } = await octokit.repos.getContent({
       owner,
       repo,
-      path: `.codewalker/${commitHash}.json`,
+      path: `.codewalk/${commitHash}.json`,
       ref,
     });
 
