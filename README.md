@@ -1,132 +1,84 @@
-# codewalk Visualizer
+# codewalk
 
-A Next.js web application that visualizes code changes tracked by the [codewalk skill](./.claude/skills/codewalk.md) in GitHub pull requests.
+A toolkit for tracking and visualizing AI-assisted code changes with structured reasoning.
 
-## Features
+When Claude makes changes to your code, codewalk captures *why* each change was made—not just what changed. This makes code review faster and helps you understand AI-generated code.
 
-- **GitHub Integration**: Browse pull requests from any GitHub repository
-- **Commit Tracking**: View all commits within a pull request
-- **Change Visualization**: See code changes with syntax highlighting
-- **codewalk Support**: Display structured explanations from `.codewalk/*.json` tracking files
-- **Grouped Changes**: View hunks grouped by logical purpose with reasoning
+## How It Works
 
-## Getting Started
+1. **Claude makes changes** to your codebase
+2. **codewalk tracks** each logical change with reasoning in `.codewalk/<commit>.json`
+3. **You review** changes grouped by intent, not just by file
 
-### Prerequisites
+## Install the Plugin
 
-- Node.js 18+ installed
-- (Optional) GitHub Personal Access Token for private repos or higher rate limits
-
-### Installation
-
-1. Install dependencies:
 ```bash
-npm install
+# Add the marketplace
+/plugin marketplace add lukecrum/walk-me-thru-your-changes
+
+# Install codewalk
+/plugin install codewalk
 ```
 
-2. (Optional) Configure GitHub token:
-```bash
-cp .env.local.example .env.local
-# Edit .env.local and add your GitHub token
+Once installed, Claude will automatically create tracking files for every commit.
+
+## Tracking File Format
+
+```json
+{
+  "version": 1,
+  "commit": "a1b2c3d",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Add dark mode toggle that persists to localStorage",
+      "files": [
+        { "path": "src/App.tsx", "hunks": [1, 2] },
+        { "path": "src/styles.css", "hunks": [1] }
+      ]
+    }
+  ]
+}
 ```
 
-3. Run the development server:
-```bash
-npm run dev
+## Project Structure
+
+```
+codewalk/
+├── packages/
+│   ├── claude-plugin/    # Claude marketplace plugin
+│   └── types/            # Shared TypeScript types
+├── apps/
+│   ├── web/              # Web app for visualizing PRs
+│   └── cli/              # Terminal UI for local visualization
+└── marketplace.json      # Plugin marketplace definition
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
+## Packages
 
-## Usage
-
-1. **Configure Repository**:
-   - Enter the repository owner (e.g., `octocat`)
-   - Enter the repository name (e.g., `my-repo`)
-   - (Optional) Provide a GitHub token
-
-2. **Select Pull Request**:
-   - Browse available pull requests
-   - Click on a PR to view its commits
-
-3. **View Commits**:
-   - See all commits in the selected PR
-   - Click on a commit to view detailed changes
-
-4. **Visualize Changes**:
-   - If a `.codewalk/<commit-hash>.json` file exists, changes are grouped by logical purpose
-   - Each change includes:
-     - **Reasoning**: Why the change was made
-     - **Files**: Which files were affected
-     - **Hunks**: The specific code changes with line numbers
-   - If no tracking file exists, all diffs are shown
-
-## codewalk Tracking Files
-
-This app reads tracking files from `.codewalk/<commit-hash>.json` in your repository. These files are created by the codewalk skill and follow this schema:
-
-```typescript
-type Changeset = {
-  version: number;
-  commit: string;
-  author: string;
-  changes: Change[];
-};
-
-type Change = {
-  reasoning: string;  // Why this change was made
-  files: FileChange[];
-};
-
-type FileChange = {
-  path: string;       // File path relative to repo root
-  hunks: number[];    // Which hunks (1-indexed) belong to this change
-};
-```
-
-## GitHub Token
-
-A GitHub token is optional but recommended for:
-- Accessing private repositories
-- Higher API rate limits (5,000 requests/hour vs 60 requests/hour)
-
-Create a token at: [https://github.com/settings/tokens](https://github.com/settings/tokens)
-
-Required scopes:
-- `repo` (for private repositories)
-- `public_repo` (for public repositories only)
-
-## Tech Stack
-
-- **Framework**: Next.js 16 with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **GitHub API**: Octokit
-- **Deployment**: Ready for Vercel, Netlify, or any Node.js host
+| Package | Description |
+|---------|-------------|
+| [claude-plugin](./packages/claude-plugin) | Claude marketplace plugin - install this to enable tracking |
+| [web](./apps/web) | Next.js app for visualizing tracked changes in GitHub PRs |
+| [cli](./apps/cli) | Terminal UI for browsing tracked changes locally |
+| [types](./packages/types) | Shared TypeScript type definitions |
 
 ## Development
 
 ```bash
-# Run development server
+# Install dependencies
+npm install
+
+# Run web app
 npm run dev
 
-# Build for production
+# Build all packages
 npm run build
 
-# Run production server
-npm start
-
-# Run linter
-npm run lint
-```
-
-## Claude Marketplace Plugin
-
-This project includes a Claude marketplace plugin at `packages/claude-plugin/` for external distribution. Install it with:
-
-```
-claude plugin install codewalk
+# Type check
+npm run typecheck
 ```
 
 ## License
 
-ISC
+MIT
