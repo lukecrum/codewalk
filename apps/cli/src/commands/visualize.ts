@@ -4,6 +4,7 @@ import * as path from 'path';
 import { createCliRenderer } from '@opentui/core';
 import { getCurrentBranch, getBranchCommits, isGitRepo } from '../utils/git.js';
 import { loadTrackingFiles, getTrackedCommits, aggregateByReasoning } from '../utils/tracking.js';
+import { loadSettings, getTrackingDirectory } from '../utils/settings.js';
 import { createAppState } from '../tui/app.js';
 import { TreeView } from '../tui/tree-view.js';
 
@@ -14,7 +15,7 @@ export interface VisualizeOptions {
 /**
  * Load tracking data for the current branch
  */
-async function loadBranchData(cwd: string) {
+async function loadBranchData(cwd: string, trackingDir: string) {
   const branch = getCurrentBranch(cwd);
   const commits = getBranchCommits(cwd);
 
@@ -22,7 +23,7 @@ async function loadBranchData(cwd: string) {
     return { branch, reasoningGroups: [] };
   }
 
-  const allTrackedCommits = await loadTrackingFiles(cwd, commits);
+  const allTrackedCommits = await loadTrackingFiles(trackingDir, commits);
   const trackedCommits = getTrackedCommits(allTrackedCommits);
 
   if (trackedCommits.length === 0) {
@@ -42,9 +43,13 @@ export async function visualizeCommand(options: VisualizeOptions): Promise<void>
     process.exit(1);
   }
 
+  // Load settings from .claude/codewalk.local.md
+  const settings = await loadSettings(cwd);
+  const trackingDir = getTrackingDirectory(cwd, settings);
+
   // Load initial data
   console.log(pc.dim('Loading tracking data...'));
-  const { branch, reasoningGroups } = await loadBranchData(cwd);
+  const { branch, reasoningGroups } = await loadBranchData(cwd, trackingDir);
 
   // Create OpenTUI renderer (start even if no data - we'll watch for changes)
   console.log(pc.dim('Starting visualizer...'));
@@ -66,14 +71,13 @@ export async function visualizeCommand(options: VisualizeOptions): Promise<void>
   let currentBranch = branch;
 
   // Watch for new tracking files
-  const codewalkDir = path.join(cwd, '.codewalk');
   const gitHeadPath = path.join(cwd, '.git', 'HEAD');
   let trackingWatcher: fs.FSWatcher | null = null;
   let branchWatcher: fs.FSWatcher | null = null;
   let debounceTimer: NodeJS.Timeout | null = null;
 
   const reloadData = async (branchChanged = false) => {
-    const { branch: newBranch, reasoningGroups: newGroups } = await loadBranchData(cwd);
+    const { branch: newBranch, reasoningGroups: newGroups } = await loadBranchData(cwd, trackingDir);
 
     if (branchChanged || newBranch !== currentBranch) {
       // Branch changed - update with new branch name and clear state
@@ -85,9 +89,11 @@ export async function visualizeCommand(options: VisualizeOptions): Promise<void>
     }
   };
 
-  // Watch .codewalk/ for new tracking files
+  // Watch tracking directory for new tracking files
   try {
-    trackingWatcher = fs.watch(codewalkDir, (eventType, filename) => {
+    // Ensure directory exists before watching (for global storage)
+    await fs.promises.mkdir(trackingDir, { recursive: true });
+    trackingWatcher = fs.watch(trackingDir, (eventType, filename) => {
       if (filename && filename.endsWith('.json')) {
         if (debounceTimer) clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => reloadData(), 100);

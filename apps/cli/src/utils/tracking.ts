@@ -21,13 +21,13 @@ export interface ReasoningGroup {
 }
 
 export async function loadTrackingFiles(
-  cwd: string,
+  trackingDir: string,
   commits: CommitInfo[]
 ): Promise<TrackedCommit[]> {
   const result: TrackedCommit[] = [];
 
   for (const commit of commits) {
-    const trackingPath = path.join(cwd, '.codewalk', `${commit.shortSha}.json`);
+    const trackingPath = path.join(trackingDir, `${commit.shortSha}.json`);
     let tracking: Changeset | null = null;
 
     try {
