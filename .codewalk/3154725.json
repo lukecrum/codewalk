@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "commit": "3154725",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Document the plugin settings configuration options in the README. Users can now learn how to customize storage mode (local vs global), auto-commit behavior, and global directory path without digging into the skill file.",
+      "files": [
+        { "path": "README.md", "hunks": [1] }
+      ]
+    }
+  ]
+}

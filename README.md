@@ -22,6 +22,44 @@ When Claude makes changes to your code, codewalk captures *why* each change was 
 
 Once installed, Claude will automatically create tracking files for every commit.
 
+## Plugin Settings
+
+Codewalk can be configured via `.claude/codewalk.local.md` in your project root. If no settings file exists, defaults are used.
+
+### Settings File Format
+
+```markdown
+---
+storage: local
+autoCommit: true
+globalDir: ~/.codewalk
+---
+
+Optional markdown notes here (ignored by the plugin).
+```
+
+### Available Settings
+
+| Setting | Values | Default | Description |
+|---------|--------|---------|-------------|
+| `storage` | `local`, `global` | `local` | Where to store tracking files |
+| `globalDir` | path | `~/.codewalk` | Directory for global storage (supports `~`) |
+| `autoCommit` | `true`, `false` | `true` | Auto-commit tracking files (local storage only) |
+
+### Storage Modes
+
+**Local storage** (`storage: local`):
+- Tracking files stored in `.codewalk/<hash>.json` in the project
+- When `autoCommit: true`: Files are amended into the code commit
+- When `autoCommit: false`: Files are created but left untracked
+- Best for: Projects where team visibility of tracking data is important
+
+**Global storage** (`storage: global`):
+- Tracking files stored in `<globalDir>/<repo-name>/<hash>.json`
+- Files are NOT in the git repo (never committed)
+- Repo name is derived from the directory name
+- Best for: Personal tracking without adding files to the repo
+
 ## Tracking File Schema
 
 Tracking files are stored at `.codewalk/<commit-hash>.json` and follow this schema:
