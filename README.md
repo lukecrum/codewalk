@@ -14,7 +14,7 @@ When Claude makes changes to your code, codewalk captures *why* each change was 
 
 ```bash
 # Add the marketplace
-/plugin marketplace add lukecrum/walk-me-thru-your-changes
+/plugin marketplace add lukecrum/codewalk
 
 # Install codewalk
 /plugin install codewalk
