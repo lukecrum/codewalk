@@ -44,5 +44,3 @@ next-env.d.ts
 # tree-sitter assets (bundled by bun)
 *.wasm
 *.scm
-
-.codewalk
