@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "commit": "f06879a",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Add settings support to CLI visualizer. The visualizer now reads settings from .claude/codewalk.local.md to determine where tracking files are stored. This enables both local (.codewalk/) and global (~/.codewalk/<repo>/) storage modes, matching the Claude plugin configuration. Includes YAML frontmatter parsing, tilde expansion for paths, and dynamic tracking directory resolution.",
+      "files": [
+        { "path": "apps/cli/src/utils/settings.ts", "hunks": [1] },
+        { "path": "apps/cli/src/utils/tracking.ts", "hunks": [1] },
+        { "path": "apps/cli/src/commands/visualize.ts", "hunks": [1, 2, 3, 4, 5] }
+      ]
+    }
+  ]
+}
