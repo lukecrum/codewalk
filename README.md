@@ -2,11 +2,11 @@
 
 A toolkit for tracking and visualizing AI-assisted code changes with structured reasoning.
 
-When Claude makes changes to your code, codewalk captures *why* each change was made—not just what changed. This makes code review faster and helps you understand AI-generated code.
+When Claude makes changes to your code, codewalk captures *why* each change was changed, not just what changed. This makes code review faster and helps you understand AI-generated code.
 
 ## How It Works
 
-1. **Claude makes changes** to your codebase
+1. **An agent makes changes** to your codebase
 2. **codewalk tracks** each logical change with reasoning in `.codewalk/<commit>.json`
 3. **You review** changes grouped by intent, not just by file
 
