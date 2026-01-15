@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "commit": "2b0f440",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Add comprehensive tracking file schema documentation to the top-level README. Includes TypeScript type definitions for Changeset, Change, and FileChange types, along with key concepts explaining logical grouping, hunk mapping, and the focus on intent over description. The annotated example shows how changes across multiple files can be grouped under one reasoning.",
+      "files": [
+        { "path": "README.md", "hunks": [1] }
+      ]
+    }
+  ]
+}
