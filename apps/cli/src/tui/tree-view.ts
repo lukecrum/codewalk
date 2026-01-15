@@ -286,14 +286,34 @@ export class TreeView {
       this.headerBox.remove(child.id);
     }
 
+    // Create a flex container for left and right content
+    const headerContainer = new BoxRenderable(this.renderer, {
+      width: '100%',
+      flexDirection: 'row',
+      paddingLeft: 1,
+      paddingRight: 1,
+    });
+
     const totalChanges = this.state.reasoningGroups.length;
     const headerText = new TextRenderable(this.renderer, {
       content: ` codewalk - ${this.state.branch} (${totalChanges} logical changes)`,
       fg: '#88ccff',
-      paddingTop: 0,
-      paddingLeft: 1,
+      flexGrow: 1,
     });
-    this.headerBox.add(headerText);
+    headerContainer.add(headerText);
+
+    // Show tracking directory on the right (use ~ for home dir)
+    const trackingPath = this.state.trackingDir.replace(
+      process.env.HOME || '',
+      '~'
+    );
+    const trackingText = new TextRenderable(this.renderer, {
+      content: trackingPath,
+      fg: '#666666',
+    });
+    headerContainer.add(trackingText);
+
+    this.headerBox.add(headerContainer);
   }
 
   private buildContent(): void {
