@@ -1,19 +1,11 @@
 # codewalk
 
-**CRITICAL REQUIREMENT**: You MUST create git commits for your changes AND create tracking files after EVERY task. No exceptions.
+This project uses the codewalk plugin for tracking AI-assisted code changes.
 
-## Workflow (MANDATORY):
-1. Make your code changes using Write/Edit tools
-2. **COMMIT the changes**: `git add -A && git commit -m "descriptive message"`
-3. Get the commit hash: `git rev-parse --short HEAD`
-4. **IMMEDIATELY** create `.codewalk/<commit-hash>.json` with the tracking data
-5. Commit the tracking file: `git add .codewalk/<hash>.json && git commit -m "Add tracking file for <hash>"`
-6. Only THEN respond to the user
+The plugin automatically creates structured tracking files that explain the reasoning behind each change.
 
-**DO NOT** skip commits. **DO NOT** respond to the user until both the code commit AND tracking file commit are done.
-
-See `.claude/skills/codewalk.md` for the complete schema and examples.
+See `.claude/skills/codewalk.md` for full workflow documentation and examples.
 
 ---
 
-**Note:** This project includes a Claude marketplace plugin at `packages/claude-plugin/` for external distribution.
+**Note:** This project includes the Claude marketplace plugin source at `packages/claude-plugin/` for external distribution.

@@ -18,6 +18,48 @@ Install from the Claude marketplace:
 claude plugin install codewalk
 ```
 
+## Configuration
+
+Create `.claude/codewalk.local.md` in your project root to customize behavior:
+
+```markdown
+---
+storage: local
+autoCommit: true
+globalDir: ~/.codewalk
+---
+```
+
+### Settings
+
+| Setting | Values | Default | Description |
+|---------|--------|---------|-------------|
+| `storage` | `local`, `global` | `local` | Where to store tracking files |
+| `autoCommit` | `true`, `false` | `true` | Auto-commit tracking files (local only) |
+| `globalDir` | path | `~/.codewalk` | Directory for global storage |
+
+### Storage Modes
+
+| Mode | Tracking Location | Git Behavior |
+|------|-------------------|--------------|
+| `local` + `autoCommit: true` | `.codewalk/<hash>.json` | Amended to code commit |
+| `local` + `autoCommit: false` | `.codewalk/<hash>.json` | Left untracked |
+| `global` | `~/.codewalk/<repo>/<hash>.json` | Not in repo |
+
+### Gitignore
+
+For `autoCommit: false` mode, add to `.gitignore`:
+
+```gitignore
+.codewalk/
+```
+
+Always gitignore the settings file:
+
+```gitignore
+.claude/*.local.md
+```
+
 ## Usage
 
 Once installed, Claude will automatically:
