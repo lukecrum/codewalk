@@ -14,7 +14,7 @@ When Claude makes changes to your code, codewalk captures *why* each change was 
 
 ```bash
 # Add the marketplace
-/plugin marketplace add lukecrum/walk-me-thru-your-changes
+/plugin marketplace add lukecrum/codewalk
 
 # Install codewalk
 /plugin install codewalk
@@ -72,45 +72,3 @@ type FileChange = {
 ```
 
 This tells reviewers: "Hunks 1-2 in App.tsx and hunk 1 in styles.css all work together to add a dark mode toggle with persistence."
-
-## Project Structure
-
-```
-codewalk/
-├── packages/
-│   ├── claude-plugin/    # Claude marketplace plugin
-│   └── types/            # Shared TypeScript types
-├── apps/
-│   ├── web/              # Web app for visualizing PRs
-│   └── cli/              # Terminal UI for local visualization
-└── marketplace.json      # Plugin marketplace definition
-```
-
-## Packages
-
-| Package | Description |
-|---------|-------------|
-| [claude-plugin](./packages/claude-plugin) | Claude marketplace plugin - install this to enable tracking |
-| [web](./apps/web) | Next.js app for visualizing tracked changes in GitHub PRs |
-| [cli](./apps/cli) | Terminal UI for browsing tracked changes locally |
-| [types](./packages/types) | Shared TypeScript type definitions |
-
-## Development
-
-```bash
-# Install dependencies
-npm install
-
-# Run web app
-npm run dev
-
-# Build all packages
-npm run build
-
-# Type check
-npm run typecheck
-```
-
-## License
-
-MIT
