@@ -20782,6 +20782,16 @@ function isGitRepo(cwd) {
     return false;
   }
 }
+function getRepoRoot(cwd) {
+  try {
+    return execSync("git rev-parse --show-toplevel", {
+      cwd,
+      encoding: "utf-8"
+    }).trim();
+  } catch {
+    throw new Error("Not a git repository");
+  }
+}
 function getMainBranch(cwd) {
   try {
     const result = execSync('git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null || echo "refs/heads/main"', {
@@ -21005,10 +21015,11 @@ function getTrackingDirectory(cwd, settings) {
 }
 
 // src/tui/app.ts
-function createAppState(branch, reasoningGroups) {
+function createAppState(branch, reasoningGroups, trackingDir) {
   return {
     branch,
     reasoningGroups,
+    trackingDir,
     selectedIndex: 0,
     expandedReasonings: new Set,
     expandedFiles: new Set
@@ -21213,14 +21224,26 @@ class TreeView {
     for (const child of headerChildren) {
       this.headerBox.remove(child.id);
     }
+    const headerContainer = new BoxRenderable(this.renderer, {
+      width: "100%",
+      flexDirection: "row",
+      paddingLeft: 1,
+      paddingRight: 1
+    });
     const totalChanges = this.state.reasoningGroups.length;
     const headerText = new TextRenderable(this.renderer, {
       content: ` codewalk - ${this.state.branch} (${totalChanges} logical changes)`,
       fg: "#88ccff",
-      paddingTop: 0,
-      paddingLeft: 1
+      flexGrow: 1
     });
-    this.headerBox.add(headerText);
+    headerContainer.add(headerText);
+    const trackingPath = this.state.trackingDir.replace(process.env.HOME || "", "~");
+    const trackingText = new TextRenderable(this.renderer, {
+      content: trackingPath,
+      fg: "#666666"
+    });
+    headerContainer.add(trackingText);
+    this.headerBox.add(headerContainer);
   }
   buildContent() {
     if (this.state.reasoningGroups.length === 0) {
@@ -21527,10 +21550,11 @@ async function visualizeCommand(options) {
     console.error(import_picocolors2.default.red("Error: Not a git repository"));
     process.exit(1);
   }
-  const settings = await loadSettings(cwd);
-  const trackingDir = getTrackingDirectory(cwd, settings);
+  const repoRoot = getRepoRoot(cwd);
+  const settings = await loadSettings(repoRoot);
+  const trackingDir = getTrackingDirectory(repoRoot, settings);
   console.log(import_picocolors2.default.dim("Loading tracking data..."));
-  const { branch, reasoningGroups } = await loadBranchData(cwd, trackingDir);
+  const { branch, reasoningGroups } = await loadBranchData(repoRoot, trackingDir);
   console.log(import_picocolors2.default.dim("Starting visualizer..."));
   const renderer = await createCliRenderer({
     exitOnCtrlC: true,
@@ -21538,15 +21562,15 @@ async function visualizeCommand(options) {
     useMouse: true,
     backgroundColor: "#0f0f1a"
   });
-  const state = createAppState(branch, reasoningGroups);
+  const state = createAppState(branch, reasoningGroups, trackingDir);
   const treeView = new TreeView(renderer, state);
   let currentBranch = branch;
-  const gitHeadPath = path7.join(cwd, ".git", "HEAD");
+  const gitHeadPath = path7.join(repoRoot, ".git", "HEAD");
   let trackingWatcher = null;
   let branchWatcher = null;
   let debounceTimer = null;
   const reloadData = async (branchChanged = false) => {
-    const { branch: newBranch, reasoningGroups: newGroups } = await loadBranchData(cwd, trackingDir);
+    const { branch: newBranch, reasoningGroups: newGroups } = await loadBranchData(repoRoot, trackingDir);
     if (branchChanged || newBranch !== currentBranch) {
       currentBranch = newBranch;
       treeView.updateData(newGroups, newBranch);

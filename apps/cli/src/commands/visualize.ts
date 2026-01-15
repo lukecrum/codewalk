@@ -2,7 +2,7 @@ import pc from 'picocolors';
 import * as fs from 'fs';
 import * as path from 'path';
 import { createCliRenderer } from '@opentui/core';
-import { getCurrentBranch, getBranchCommits, isGitRepo } from '../utils/git.js';
+import { getCurrentBranch, getBranchCommits, isGitRepo, getRepoRoot } from '../utils/git.js';
 import { loadTrackingFiles, getTrackedCommits, aggregateByReasoning } from '../utils/tracking.js';
 import { loadSettings, getTrackingDirectory } from '../utils/settings.js';
 import { createAppState } from '../tui/app.js';
@@ -43,13 +43,16 @@ export async function visualizeCommand(options: VisualizeOptions): Promise<void>
     process.exit(1);
   }
 
+  // Get repo root to work from anywhere in the repository
+  const repoRoot = getRepoRoot(cwd);
+
   // Load settings from .claude/codewalk.local.md
-  const settings = await loadSettings(cwd);
-  const trackingDir = getTrackingDirectory(cwd, settings);
+  const settings = await loadSettings(repoRoot);
+  const trackingDir = getTrackingDirectory(repoRoot, settings);
 
   // Load initial data
   console.log(pc.dim('Loading tracking data...'));
-  const { branch, reasoningGroups } = await loadBranchData(cwd, trackingDir);
+  const { branch, reasoningGroups } = await loadBranchData(repoRoot, trackingDir);
 
   // Create OpenTUI renderer (start even if no data - we'll watch for changes)
   console.log(pc.dim('Starting visualizer...'));
@@ -62,7 +65,7 @@ export async function visualizeCommand(options: VisualizeOptions): Promise<void>
   });
 
   // Create app state (may have empty reasoningGroups)
-  const state = createAppState(branch, reasoningGroups);
+  const state = createAppState(branch, reasoningGroups, trackingDir);
 
   // Create tree view
   const treeView = new TreeView(renderer, state);
@@ -71,13 +74,13 @@ export async function visualizeCommand(options: VisualizeOptions): Promise<void>
   let currentBranch = branch;
 
   // Watch for new tracking files
-  const gitHeadPath = path.join(cwd, '.git', 'HEAD');
+  const gitHeadPath = path.join(repoRoot, '.git', 'HEAD');
   let trackingWatcher: fs.FSWatcher | null = null;
   let branchWatcher: fs.FSWatcher | null = null;
   let debounceTimer: NodeJS.Timeout | null = null;
 
   const reloadData = async (branchChanged = false) => {
-    const { branch: newBranch, reasoningGroups: newGroups } = await loadBranchData(cwd, trackingDir);
+    const { branch: newBranch, reasoningGroups: newGroups } = await loadBranchData(repoRoot, trackingDir);
 
     if (branchChanged || newBranch !== currentBranch) {
       // Branch changed - update with new branch name and clear state

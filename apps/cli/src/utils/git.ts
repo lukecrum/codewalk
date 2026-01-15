@@ -106,6 +106,17 @@ export function isGitRepo(cwd: string): boolean {
   }
 }
 
+export function getRepoRoot(cwd: string): string {
+  try {
+    return execSync('git rev-parse --show-toplevel', {
+      cwd,
+      encoding: 'utf-8',
+    }).trim();
+  } catch {
+    throw new Error('Not a git repository');
+  }
+}
+
 export function getMainBranch(cwd: string): string {
   try {
     // Try to get the default branch from origin

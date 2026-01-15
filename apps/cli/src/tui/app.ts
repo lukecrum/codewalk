@@ -11,6 +11,7 @@ import type { ReasoningGroup } from '../utils/tracking.js';
 export interface AppState {
   branch: string;
   reasoningGroups: ReasoningGroup[];
+  trackingDir: string;
   selectedIndex: number;
   expandedReasonings: Set<number>;
   expandedFiles: Set<string>; // "reasoningIndex|filePath"
@@ -18,11 +19,13 @@ export interface AppState {
 
 export function createAppState(
   branch: string,
-  reasoningGroups: ReasoningGroup[]
+  reasoningGroups: ReasoningGroup[],
+  trackingDir: string
 ): AppState {
   return {
     branch,
     reasoningGroups,
+    trackingDir,
     selectedIndex: 0,
     expandedReasonings: new Set(),
     expandedFiles: new Set(),
