@@ -42,7 +42,7 @@ Optional markdown notes here (ignored by the plugin).
 
 **Local storage** (`storage: local`):
 - Tracking files stored in `.codewalk/<hash>.json` in the project
-- When `autoCommit: true`: Files are amended into the code commit
+- When `autoCommit: true`: Files are committed in a separate commit after the code commit
 - When `autoCommit: false`: Files are created but left untracked
 - Best for: Projects where team visibility of tracking data is important
 
@@ -104,12 +104,13 @@ If the user requests changes to something you just did (e.g., "use different col
 
 **If it's part of the same logical task:**
 
-1. Amend the commit: `git add -A && git commit --amend --no-edit`
-2. Update the existing tracking file to reflect the final state
-3. The reasoning should describe the final result, not the iteration history
-4. For `storage: local` with `autoCommit: true`: Amend again to include the updated tracking file
-5. For `storage: local` with `autoCommit: false`: Leave the updated tracking file untracked
-6. For `storage: global`: Just overwrite the file at the global path
+1. Amend the code commit: `git add -A && git commit --amend --no-edit`
+2. Get the NEW commit hash (amending changes the hash): `git rev-parse --short HEAD`
+3. Delete the old tracking file and create a new one with the new hash
+4. The reasoning should describe the final result, not the iteration history
+5. For `storage: local` with `autoCommit: true`: Commit the new tracking file: `git add .codewalk/ && git commit -m "Add tracking file for <new-hash>"`
+6. For `storage: local` with `autoCommit: false`: Leave the updated tracking file untracked
+7. For `storage: global`: Delete the old file and create new one at the new hash path
 
 **If it's a distinct new task:** Create a new commit and new tracking file following the normal workflow.
 
@@ -125,8 +126,8 @@ Before starting work, check for settings at `.claude/codewalk.local.md`. If it e
 2. Make code changes and commit: `git add -A && git commit -m "descriptive message"`
 3. Get the commit hash: `git rev-parse --short HEAD`
 4. Create tracking file at `.codewalk/<hash>.json`
-5. Amend the tracking file into the commit: `git add .codewalk/<hash>.json && git commit --amend --no-edit`
-6. Validate JSON: `python3 -c "import json; json.load(open('.codewalk/<hash>.json'))"`
+5. Validate JSON: `python3 -c "import json; json.load(open('.codewalk/<hash>.json'))"`
+6. Commit the tracking file separately: `git add .codewalk/<hash>.json && git commit -m "Add tracking file for <hash>"`
 
 **For `storage: local` with `autoCommit: false`:**
 
@@ -225,17 +226,20 @@ I'll update the colors.
 </ASSISTANT>
 
 <NOTE>
-Since this is a refinement of the same logical task, amend the previous commit:
+Since this is a refinement of the same logical task, amend the previous code commit:
 `git add -A && git commit --amend --no-edit`
 
-Then update the tracking file to reflect the final state. The reasoning now describes blue/gray, not orange/green.
+Get the NEW commit hash (amending changes it): `git rev-parse --short HEAD`
+Delete the old tracking file and create a new one with the new hash.
+The reasoning now describes blue/gray, not orange/green.
+Then commit the new tracking file: `git add .codewalk/ && git commit -m "Add tracking file for <new-hash>"`
 </NOTE>
 
-<TRACK file=".codewalk/a1b2c3d.json">
+<TRACK file=".codewalk/b2c3d4e.json">
 ```json
 {
   "version": 1,
-  "commit": "a1b2c3d",
+  "commit": "b2c3d4e",
   "author": "claude",
   "changes": [
     {

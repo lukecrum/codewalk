@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "commit": "8019ea4",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Replace 'amend tracking file into commit' workflow with separate commit approach. Since amending a commit changes its hash, the tracking file would reference a non-existent commit. The new workflow creates the code commit first, gets its hash, creates the tracking file, then commits the tracking file separately. This ensures the tracking file always references the correct commit hash.",
+      "files": [
+        { "path": ".claude/skills/codewalk.md", "hunks": [1, 2, 3, 4] },
+        { "path": "packages/claude-plugin/skills/codewalk/SKILL.md", "hunks": [1, 2, 3, 4] }
+      ]
+    }
+  ]
+}
