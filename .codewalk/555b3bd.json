@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "commit": "555b3bd",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Enable visualizer to work from any directory within the repository. Added getRepoRoot() function to find the git root, updated visualize.ts to use repo root for all operations (settings loading, git commands, file watching), added trackingDir to AppState, and display the tracking directory path in the header (right-aligned, dimmed, with ~ for home directory).",
+      "files": [
+        { "path": "apps/cli/src/utils/git.ts", "hunks": [1] },
+        { "path": "apps/cli/src/commands/visualize.ts", "hunks": [1, 2, 3, 4] },
+        { "path": "apps/cli/src/tui/app.ts", "hunks": [1] },
+        { "path": "apps/cli/src/tui/tree-view.ts", "hunks": [1] }
+      ]
+    }
+  ]
+}
