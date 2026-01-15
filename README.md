@@ -22,6 +22,16 @@ When Claude makes changes to your code, codewalk captures *why* each change was 
 
 Once installed, Claude will automatically create tracking files for every commit.
 
+## Run the visualizer
+
+```
+npx codewalk visualize
+```
+or
+```
+bunx codewalk visualize
+```
+
 ## Plugin Settings
 
 Codewalk can be configured via `.claude/codewalk.local.md` in your project root. If no settings file exists, defaults are used.
