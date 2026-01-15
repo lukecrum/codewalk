@@ -22,7 +22,37 @@ When Claude makes changes to your code, codewalk captures *why* each change was 
 
 Once installed, Claude will automatically create tracking files for every commit.
 
-## Tracking File Format
+## Tracking File Schema
+
+Tracking files are stored at `.codewalk/<commit-hash>.json` and follow this schema:
+
+```typescript
+type Changeset = {
+  version: number;      // Schema version (currently 1)
+  commit: string;       // Git commit SHA this changeset describes
+  author: string;       // Who made the changes ("claude", human name, etc.)
+  changes: Change[];    // List of logical changes in the commit
+};
+
+type Change = {
+  reasoning: string;    // Why this change was made (intent, not just what)
+  files: FileChange[];  // Files affected by this logical change
+};
+
+type FileChange = {
+  path: string;         // File path relative to repo root
+  hunks: number[];      // Which hunks (1-indexed) belong to this change
+};
+```
+
+### Key Concepts
+
+- **One tracking file per commit** - Each commit gets its own `.codewalk/<hash>.json`
+- **Logical grouping** - Related changes across multiple files share one reasoning
+- **Hunk mapping** - Links reasoning to specific diff hunks (the `@@` sections in git diff)
+- **Intent over description** - Reasoning explains *why*, not *what* (the diff shows what)
+
+### Example
 
 ```json
 {
@@ -40,3 +70,5 @@ Once installed, Claude will automatically create tracking files for every commit
   ]
 }
 ```
+
+This tells reviewers: "Hunks 1-2 in App.tsx and hunk 1 in styles.css all work together to add a dark mode toggle with persistence."

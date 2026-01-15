@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "commit": "cea526a",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Add configurable plugin settings via `.claude/codewalk.local.md` with YAML frontmatter. Supports three storage modes: local+autoCommit (tracking files amended to code commit), local+no-autoCommit (tracking files left untracked), and global (files stored outside repo at configurable path). Settings include storage mode, globalDir path, and autoCommit boolean.",
+      "files": [
+        { "path": "packages/claude-plugin/skills/codewalk/SKILL.md", "hunks": [1, 2] },
+        { "path": ".claude/skills/codewalk.md", "hunks": [1, 2, 3, 4, 5, 6] },
+        { "path": "packages/claude-plugin/README.md", "hunks": [1] }
+      ]
+    },
+    {
+      "reasoning": "Update stop hook with settings-aware verification. The hook now checks for settings file, determines storage mode, and verifies tracking file existence based on configured mode (checking commit contents for autoCommit, file existence for no-autoCommit, or global path for global storage).",
+      "files": [
+        { "path": "packages/claude-plugin/hooks/stop-enforcement.json", "hunks": [1] }
+      ]
+    },
+    {
+      "reasoning": "Simplify CLAUDE.md files to reduce instruction duplication. Root CLAUDE.md now references the skill file instead of duplicating workflow steps. Template CLAUDE.md directs users to install the plugin rather than copying manual instructions. Local skills file synced with plugin version and marked as development copy.",
+      "files": [
+        { "path": "CLAUDE.md", "hunks": [1] },
+        { "path": "apps/web/public/templates/CLAUDE.md", "hunks": [1] },
+        { "path": ".claude/skills/codewalk.md", "hunks": [7, 8, 9, 10, 11] }
+      ]
+    }
+  ]
+}

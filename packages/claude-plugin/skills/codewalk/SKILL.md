@@ -12,6 +12,44 @@ The purpose of the file is to walk the user through the code changes step-by-ste
 
 User prompts are surrounded by `<USER>` tags, your code changes are surrounded by `<ASSISTANT>` tags, example tracking files are surrounded by `<TRACK>` tags, and notes are surrounded in `<NOTE>` tags.
 
+## Settings
+
+Codewalk can be configured via `.claude/codewalk.local.md` in your project root. If no settings file exists, defaults are used.
+
+### Settings File Format
+
+```markdown
+---
+storage: local
+autoCommit: true
+globalDir: ~/.codewalk
+---
+
+Optional markdown notes here (ignored by the plugin).
+```
+
+### Available Settings
+
+| Setting | Values | Default | Description |
+|---------|--------|---------|-------------|
+| `storage` | `local`, `global` | `local` | Where to store tracking files |
+| `globalDir` | path | `~/.codewalk` | Directory for global storage (supports `~`) |
+| `autoCommit` | `true`, `false` | `true` | Auto-commit tracking files (local storage only) |
+
+### Storage Modes
+
+**Local storage** (`storage: local`):
+- Tracking files stored in `.codewalk/<hash>.json` in the project
+- When `autoCommit: true`: Files are amended into the code commit
+- When `autoCommit: false`: Files are created but left untracked
+- Best for: Projects where team visibility of tracking data is important
+
+**Global storage** (`storage: global`):
+- Tracking files stored in `<globalDir>/<repo-name>/<hash>.json`
+- Files are NOT in the git repo (never committed)
+- Repo name is derived from the directory name
+- Best for: Personal tracking without adding files to the repo
+
 ## Tracking File Schema
 
 ```typescript
@@ -62,23 +100,56 @@ Hunks are numbered 1, 2, 3... in order of appearance. Each `@@` line in the diff
 
 If the user requests changes to something you just did (e.g., "use different colors", "rename that function"):
 
-1. If it's part of the same logical task, amend the commit: `git add -A && git commit --amend --no-edit`
+**If it's part of the same logical task:**
+
+1. Amend the commit: `git add -A && git commit --amend --no-edit`
 2. Update the existing tracking file to reflect the final state
 3. The reasoning should describe the final result, not the iteration history
+4. For `storage: local` with `autoCommit: true`: Amend again to include the updated tracking file
+5. For `storage: local` with `autoCommit: false`: Leave the updated tracking file untracked
+6. For `storage: global`: Just overwrite the file at the global path
 
-If it's a distinct new task, create a new commit and new tracking file.
+**If it's a distinct new task:** Create a new commit and new tracking file following the normal workflow.
 
 ## Instructions
 
-1. Before committing, check if a git repo exists with `git status`. Only run `git init` if there isn't one.
-2. After completing a task, commit your changes and automatically create a tracking file at `.codewalk/<commit-hash>.json`
-3. Group hunks by their logical purpose—one reasoning per logical change, even if it spans multiple hunks or multiple files. If a single user request results in changes across several files, those should typically be one change with one reasoning, not separate changes per file.
-4. Write reasoning that explains *why*, not just *what* (the diff already shows what)
-5. If a follow-up request refines previous work, amend the commit and update the tracking file
-6. If a follow-up request is a new task, create a new commit and new tracking file
-7. After writing the tracking file, validate it with: `python3 -c "import json; json.load(open('.codewalk/<commit-hash>.json'))"`
+Before starting work, check for settings at `.claude/codewalk.local.md`. If it exists, parse the YAML frontmatter. If not, use defaults: `storage: local`, `autoCommit: true`, `globalDir: ~/.codewalk`.
 
-Do not wait for the user to ask for the tracking file—create it automatically as part of finishing each task.
+### Workflow by Storage Mode
+
+**For `storage: local` with `autoCommit: true` (default):**
+
+1. Before committing, check if a git repo exists with `git status`. Only run `git init` if there isn't one.
+2. Make code changes and commit: `git add -A && git commit -m "descriptive message"`
+3. Get the commit hash: `git rev-parse --short HEAD`
+4. Create tracking file at `.codewalk/<hash>.json`
+5. Amend the tracking file into the commit: `git add .codewalk/<hash>.json && git commit --amend --no-edit`
+6. Validate JSON: `python3 -c "import json; json.load(open('.codewalk/<hash>.json'))"`
+
+**For `storage: local` with `autoCommit: false`:**
+
+1. Before committing, check if a git repo exists with `git status`. Only run `git init` if there isn't one.
+2. Make code changes and commit: `git add -A && git commit -m "descriptive message"`
+3. Get the commit hash: `git rev-parse --short HEAD`
+4. Create tracking file at `.codewalk/<hash>.json`
+5. Do NOT stage or commit the tracking file (leave it untracked)
+6. Validate JSON: `python3 -c "import json; json.load(open('.codewalk/<hash>.json'))"`
+
+**For `storage: global`:**
+
+1. Before committing, check if a git repo exists with `git status`. Only run `git init` if there isn't one.
+2. Make code changes and commit: `git add -A && git commit -m "descriptive message"`
+3. Get the commit hash: `git rev-parse --short HEAD`
+4. Get repo name: `basename $(git rev-parse --show-toplevel)`
+5. Create directory if needed: `mkdir -p ~/.codewalk/<repo-name>` (or custom globalDir)
+6. Create tracking file at `<globalDir>/<repo-name>/<hash>.json`
+7. Validate JSON: `python3 -c "import json; json.load(open('<path-to-file>.json'))"`
+
+### General Guidelines
+
+- Group hunks by their logical purpose—one reasoning per logical change, even if it spans multiple hunks or multiple files
+- Write reasoning that explains *why*, not just *what* (the diff already shows what)
+- Do not wait for the user to ask for the tracking file—create it automatically as part of finishing each task
 
 **Important:** Always complete the tracking step after every task, even in long conversations with multiple tasks. Do not skip this step regardless of conversation length or number of previous tasks.
 

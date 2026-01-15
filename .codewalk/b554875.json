@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "commit": "b554875",
+  "author": "claude",
+  "changes": [
+    {
+      "reasoning": "Rewrite root README to describe the project at a high level - what codewalk is, how to install the plugin, and the monorepo structure. Previously it contained web app specific documentation.",
+      "files": [
+        { "path": "README.md", "hunks": [1] }
+      ]
+    },
+    {
+      "reasoning": "Move web app specific documentation (setup, usage, GitHub token config, tech stack) to apps/web/README.md where it belongs.",
+      "files": [
+        { "path": "apps/web/README.md", "hunks": [1] }
+      ]
+    }
+  ]
+}

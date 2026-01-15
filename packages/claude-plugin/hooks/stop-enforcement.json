@@ -3,8 +3,8 @@
   "hooks": [
     {
       "type": "prompt",
-      "prompt": "Check if the assistant made code changes in this session. If code changes were made, verify: 1) Changes were committed with git, 2) A tracking file was created at .codewalk/<commit-hash>.json, 3) The tracking file was also committed. If any of these are missing, block stopping and complete the codewalk workflow. If no code changes were made, or all steps are complete, approve stopping.",
-      "timeout": 30
+      "prompt": "Check if the assistant made code changes in this session. If no code changes were made, approve stopping.\n\nIf code changes were made:\n1. Check if `.claude/codewalk.local.md` exists and parse its YAML frontmatter for settings\n2. Use defaults if no settings file: storage=local, autoCommit=true, globalDir=~/.codewalk\n\nVerify based on storage mode:\n- **local + autoCommit:true**: Code was committed AND tracking file is included in the commit (verify with `git show --name-only HEAD | grep .codewalk/`)\n- **local + autoCommit:false**: Code was committed AND tracking file exists at `.codewalk/<hash>.json` (should be untracked)\n- **global**: Code was committed AND tracking file exists at `<globalDir>/<repo-name>/<hash>.json`\n\nIf verification fails, block stopping and instruct to complete the codewalk workflow. If all verifications pass, approve stopping.",
+      "timeout": 60
     }
   ]
 }
