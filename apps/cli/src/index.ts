@@ -1,6 +1,5 @@
 #!/usr/bin/env bun
 import { Command } from 'commander';
-import { initCommand } from './commands/init.js';
 import { visualizeCommand } from './commands/visualize.js';
 
 const program = new Command();
@@ -8,19 +7,7 @@ const program = new Command();
 program
   .name('codewalk')
   .description('CLI tool for visualizing AI-assisted code changes')
-  .version('0.1.0');
-
-program
-  .command('init')
-  .description('Initialize codewalk in the current project')
-  .action(async () => {
-    try {
-      await initCommand({ cwd: process.cwd() });
-    } catch (error) {
-      console.error('Error:', error instanceof Error ? error.message : error);
-      process.exit(1);
-    }
-  });
+  .version('0.1.3');
 
 program
   .command('visualize')
