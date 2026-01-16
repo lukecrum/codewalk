@@ -6,14 +6,14 @@
   },
   "metadata": {
     "description": "Official marketplace for codewalk - AI-assisted code change tracking",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "plugins": [
     {
       "name": "codewalk",
       "source": "./packages/claude-plugin",
       "description": "Track and visualize AI-assisted code changes with structured reasoning. Creates .codewalk/<commit>.json files that explain why changes were made.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "author": {
         "name": "Luke Crum"
       },
