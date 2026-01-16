@@ -1,6 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import type { Changeset } from '@codewalk/types';
+import type { Changeset } from '../types.js';
 import type { CommitInfo, FileDiff, ParsedHunk } from './git.js';
 import { getCommitFileDiffs } from './git.js';
 
