@@ -21213,7 +21213,7 @@ class TreeView {
     });
     const totalChanges = this.state.reasoningGroups.length;
     const headerText = new TextRenderable(this.renderer, {
-      content: ` codewalk - ${this.state.branch} (${totalChanges} logical changes)`,
+      content: ` codewalk - ${this.state.branch} (${totalChanges} logical change${totalChanges !== 1 ? "s" : ""})`,
       fg: "#88ccff",
       flexGrow: 1
     });
@@ -21409,7 +21409,7 @@ class TreeView {
     const totalItems = this.selectableItems.length;
     const currentPos = this.state.selectedIndex + 1;
     const footerText = new TextRenderable(this.renderer, {
-      content: `j/k: navigate \u2502 Enter/click: expand \u2502 q: quit          [${currentPos}/${totalItems}]`,
+      content: `\u2191/\u2193 or scroll: navigate \u2502 Enter/click: expand \u2502 q: quit          [${currentPos}/${totalItems}]`,
       fg: "#888888"
     });
     this.footerBox.add(footerText);
