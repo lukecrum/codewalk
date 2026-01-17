@@ -7,8 +7,8 @@ A Claude plugin that helps you track and visualize AI-assisted code changes with
 When Claude makes code changes in your repository, this plugin ensures:
 
 1. **All changes are committed** to git with descriptive messages
-2. **A tracking file is created** at `.codewalk/<commit-hash>.json`
-3. **The tracking file explains** why each change was made, not just what changed
+2. **A tracking file is created** explaining why each change was made
+3. **Reasoning is linked** to specific git commits and diff hunks
 
 ## Installation
 
@@ -24,8 +24,7 @@ Create `.claude/codewalk.local.md` in your project root to customize behavior:
 
 ```markdown
 ---
-storage: local
-autoCommit: true
+storage: global
 globalDir: ~/.codewalk
 ---
 ```
@@ -34,21 +33,19 @@ globalDir: ~/.codewalk
 
 | Setting | Values | Default | Description |
 |---------|--------|---------|-------------|
-| `storage` | `local`, `global` | `local` | Where to store tracking files |
-| `autoCommit` | `true`, `false` | `true` | Auto-commit tracking files (local only) |
+| `storage` | `global`, `local` | `global` | Where to store tracking files |
 | `globalDir` | path | `~/.codewalk` | Directory for global storage |
 
 ### Storage Modes
 
 | Mode | Tracking Location | Git Behavior |
 |------|-------------------|--------------|
-| `local` + `autoCommit: true` | `.codewalk/<hash>.json` | Amended to code commit |
-| `local` + `autoCommit: false` | `.codewalk/<hash>.json` | Left untracked |
-| `global` | `~/.codewalk/<repo>/<hash>.json` | Not in repo |
+| `global` (default) | `~/.codewalk/<repo>/<hash>.json` | Not in repo |
+| `local` | `.codewalk/<hash>.json` | Left untracked |
 
 ### Gitignore
 
-For `autoCommit: false` mode, add to `.gitignore`:
+For local storage mode, add to `.gitignore`:
 
 ```gitignore
 .codewalk/
@@ -65,7 +62,7 @@ Always gitignore the settings file:
 Once installed, Claude will automatically:
 
 1. Create git commits for code changes
-2. Generate `.codewalk/<commit>.json` files with structured reasoning
+2. Generate tracking files with structured reasoning
 3. Group related hunks by logical purpose
 4. Enforce the workflow via the Stop hook
 
