@@ -5,8 +5,8 @@
         "matcher": "*",
         "hooks": [
           {
-            "type": "prompt",
-            "prompt": "Check if code changes were made in this session by analyzing the transcript.\n\nIf code files were modified but NOT committed (no git commit in transcript after the changes), respond ONLY with this exact JSON:\n{\"ok\": false, \"reason\": \"Uncommitted code changes. Run git add -A && git commit -m 'descriptive message', then create .codewalk/<hash>.json tracking file.\"}\n\nIf code was committed but no .codewalk/<hash>.json file was created for that commit, respond ONLY with this exact JSON:\n{\"ok\": false, \"reason\": \"Missing tracking file. Create .codewalk/<hash>.json with version, commit, author, and changes array per codewalk schema.\"}\n\nIf no code changes were made, OR if changes were committed AND tracking file exists, respond ONLY with this exact JSON:\n{\"ok\": true}\n\nIMPORTANT: Respond with ONLY the JSON object, no other text.",
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/codewalk-check.sh",
             "timeout": 120
           }
         ]
