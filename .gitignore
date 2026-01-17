@@ -46,5 +46,5 @@ next-env.d.ts
 *.wasm
 *.scm
 
-# local claude config
+# local claude configuration
 .claude
