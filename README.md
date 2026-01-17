@@ -63,17 +63,22 @@ This tells reviewers: "Hunks 1-2 in App.tsx and hunk 1 in styles.css all work to
 
 ## Visualizer
 
-View tracked changes grouped by reasoning:
+Interactive TUI for reviewing tracked changes grouped by reasoning:
 
 ```bash
-npx codewalk visualize
+npx codewalk visualize   # or: npx codewalk viz
 ```
 
-**Features:**
-- Tree-based navigation of reasoning groups and files
-- Syntax-highlighted diff display
-- Live watching for new tracking files
-- Keyboard navigation (`j`/`k` to move, `enter` to expand, `q` to quit)
+Groups all changes by their reasoning text across commits, sorted by impact (most files first). Shows the current branch, tracking directory, and actual diff hunks with syntax highlighting.
+
+**Controls:**
+- `↑`/`↓` or `j`/`k` - Navigate
+- `Enter` or `Space` - Expand/collapse
+- `g`/`G` - Jump to top/bottom
+- `q` - Quit
+- Mouse scroll and click supported
+
+**Live updates:** Watches for new tracking files and branch switches automatically.
 
 ## Claude Code Plugin
 
