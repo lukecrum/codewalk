@@ -22,22 +22,12 @@ Use AskUserQuestion to ask about settings. Ask all questions in a single call:
 - question: "Where should codewalk store tracking files?"
 - multiSelect: false
 - options:
-  - label: "Local (Recommended)"
-    description: "Store in .codewalk/ directory within your project. Can be committed to git."
-  - label: "Global"
+  - label: "Global (Recommended)"
     description: "Store in ~/.codewalk/ outside the repo. Never committed, personal tracking only."
+  - label: "Local"
+    description: "Store in .codewalk/ directory within your project. Left untracked."
 
-**Question 2 - Auto-commit (for local storage):**
-- header: "Auto-commit"
-- question: "Should tracking files be auto-committed after code commits?"
-- multiSelect: false
-- options:
-  - label: "Yes (Recommended)"
-    description: "Automatically commit tracking files in a separate commit after each code commit."
-  - label: "No"
-    description: "Create tracking files but leave them untracked. You commit them manually if desired."
-
-**Question 3 - Global directory (for global storage):**
+**Question 2 - Global directory:**
 - header: "Directory"
 - question: "Where should global tracking files be stored?"
 - multiSelect: false
@@ -50,15 +40,12 @@ Use AskUserQuestion to ask about settings. Ask all questions in a single call:
 ## Step 3: Process Answers
 
 Parse the answers:
-- answers["0"]: Storage mode ("Local (Recommended)" or "Global")
-- answers["1"]: Auto-commit ("Yes (Recommended)" or "No")
-- answers["2"]: Global directory ("~/.codewalk (Recommended)" or "Custom path")
+- answers["0"]: Storage mode ("Global (Recommended)" or "Local")
+- answers["1"]: Global directory ("~/.codewalk (Recommended)" or "Custom path")
 
 Determine final settings:
-- If storage is "Local (Recommended)": set `storage: local`
-- If storage is "Global": set `storage: global`
-- If auto-commit is "Yes (Recommended)": set `autoCommit: true`
-- If auto-commit is "No": set `autoCommit: false`
+- If storage is "Global (Recommended)": set `storage: global`
+- If storage is "Local": set `storage: local`
 - If global directory is "~/.codewalk (Recommended)": set `globalDir: ~/.codewalk`
 - If global directory is "Custom path": The user will have provided the path as custom text
 
@@ -72,8 +59,7 @@ Ensure the `.claude/` directory exists, then use the Write tool to create `.clau
 
 ```markdown
 ---
-storage: <local or global>
-autoCommit: <true or false>
+storage: <global or local>
 globalDir: <path, default ~/.codewalk>
 ---
 
@@ -83,17 +69,13 @@ This file configures codewalk for this project.
 
 ## Current Settings
 
-- **Storage**: <local or global>
-  - local: Tracking files in `.codewalk/` directory
+- **Storage**: <global or local>
   - global: Tracking files in `<globalDir>/<repo-name>/`
-
-- **Auto-commit**: <true or false>
-  - Only applies to local storage
-  - When true, tracking files are committed automatically
+  - local: Tracking files in `.codewalk/` directory (untracked)
 
 - **Global Directory**: <path>
-  - Only applies to global storage
   - Where tracking files are stored outside the repo
+  - Only applies when storage is global
 
 ## Changing Settings
 
@@ -106,7 +88,6 @@ Tell the user:
 1. Settings file created/updated at `.claude/codewalk.local.md`
 2. Summary of the configuration:
    - Storage mode and what it means
-   - Auto-commit setting (if local)
-   - Global directory (if global)
+   - Global directory path
 3. Note that `.local.md` files are typically gitignored (personal settings)
 4. Settings take effect immediately for new codewalk operations
