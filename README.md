@@ -13,6 +13,7 @@ A logical change is a group of code modifications that serve a single purpose. A
 Traditional diffs show these as a flat list of file changes, making it hard to understand which parts go together. Codewalk groups related hunks across files by their shared reasoning, so reviewers see changes organized by *intent* rather than by file path.
 
 ## Visualizer
+![codewalk](visualizer.png)
 
 Interactive TUI for viewing logical changes on the current branch:
 
