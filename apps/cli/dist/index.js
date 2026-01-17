@@ -1946,7 +1946,6 @@ var {
 
 // src/commands/visualize.ts
 var import_picocolors = __toESM(require_picocolors(), 1);
-import * as fs4 from "fs";
 import * as path5 from "path";
 
 // ../../node_modules/@opentui/core/index-cr95zpf8.js
@@ -20821,6 +20820,181 @@ function getTrackingDirectory(cwd, settings) {
   return path3.join(cwd, ".codewalk");
 }
 
+// src/utils/file-watcher.ts
+import * as fs4 from "fs";
+
+class FileWatcher {
+  trackingWatcher = null;
+  branchWatcher = null;
+  trackingDebounceTimer = null;
+  branchDebounceTimer = null;
+  pollTimer = null;
+  destroyed = false;
+  lastBranchContent = null;
+  lastTrackingFiles = new Set;
+  trackingDir;
+  gitHeadPath;
+  repoRoot;
+  onTrackingChange;
+  onBranchChange;
+  pollIntervalMs;
+  constructor(options) {
+    this.trackingDir = options.trackingDir;
+    this.gitHeadPath = options.gitHeadPath;
+    this.repoRoot = options.repoRoot;
+    this.onTrackingChange = options.onTrackingChange;
+    this.onBranchChange = options.onBranchChange;
+    this.pollIntervalMs = options.pollIntervalMs ?? 1e4;
+    this.initializeState();
+    this.startWatchers();
+    this.startPolling();
+  }
+  initializeState() {
+    try {
+      this.lastBranchContent = fs4.readFileSync(this.gitHeadPath, "utf-8");
+    } catch {
+      this.lastBranchContent = null;
+    }
+    try {
+      const files = fs4.readdirSync(this.trackingDir);
+      this.lastTrackingFiles = new Set(files.filter((f) => f.endsWith(".json")));
+    } catch {
+      this.lastTrackingFiles = new Set;
+    }
+  }
+  startWatchers() {
+    this.startTrackingWatcher();
+    this.startBranchWatcher();
+  }
+  startTrackingWatcher() {
+    if (this.destroyed)
+      return;
+    try {
+      fs4.mkdirSync(this.trackingDir, { recursive: true });
+      this.trackingWatcher = fs4.watch(this.trackingDir, (eventType, filename) => {
+        if (filename && filename.endsWith(".json")) {
+          this.scheduleTrackingChange();
+        }
+      });
+      this.trackingWatcher.on("error", () => {
+        this.restartTrackingWatcher();
+      });
+    } catch {}
+  }
+  startBranchWatcher() {
+    if (this.destroyed)
+      return;
+    try {
+      this.branchWatcher = fs4.watch(this.gitHeadPath, () => {
+        this.scheduleBranchChange();
+      });
+      this.branchWatcher.on("error", () => {
+        this.restartBranchWatcher();
+      });
+    } catch {}
+  }
+  restartTrackingWatcher() {
+    if (this.destroyed)
+      return;
+    if (this.trackingWatcher) {
+      try {
+        this.trackingWatcher.close();
+      } catch {}
+      this.trackingWatcher = null;
+    }
+    setTimeout(() => {
+      if (!this.destroyed) {
+        this.startTrackingWatcher();
+      }
+    }, 1000);
+  }
+  restartBranchWatcher() {
+    if (this.destroyed)
+      return;
+    if (this.branchWatcher) {
+      try {
+        this.branchWatcher.close();
+      } catch {}
+      this.branchWatcher = null;
+    }
+    setTimeout(() => {
+      if (!this.destroyed) {
+        this.startBranchWatcher();
+      }
+    }, 1000);
+  }
+  scheduleTrackingChange() {
+    if (this.trackingDebounceTimer) {
+      clearTimeout(this.trackingDebounceTimer);
+    }
+    this.trackingDebounceTimer = setTimeout(() => {
+      this.trackingDebounceTimer = null;
+      this.onTrackingChange();
+    }, 100);
+  }
+  scheduleBranchChange() {
+    if (this.branchDebounceTimer) {
+      clearTimeout(this.branchDebounceTimer);
+    }
+    this.branchDebounceTimer = setTimeout(() => {
+      this.branchDebounceTimer = null;
+      this.onBranchChange();
+    }, 100);
+  }
+  startPolling() {
+    this.pollTimer = setInterval(() => {
+      this.poll();
+    }, this.pollIntervalMs);
+  }
+  poll() {
+    if (this.destroyed)
+      return;
+    try {
+      const currentBranchContent = fs4.readFileSync(this.gitHeadPath, "utf-8");
+      if (currentBranchContent !== this.lastBranchContent) {
+        this.lastBranchContent = currentBranchContent;
+        this.scheduleBranchChange();
+      }
+    } catch {}
+    try {
+      const files = fs4.readdirSync(this.trackingDir);
+      const currentFiles = new Set(files.filter((f) => f.endsWith(".json")));
+      const hasChanges = currentFiles.size !== this.lastTrackingFiles.size || [...currentFiles].some((f) => !this.lastTrackingFiles.has(f));
+      if (hasChanges) {
+        this.lastTrackingFiles = currentFiles;
+        this.scheduleTrackingChange();
+      }
+    } catch {}
+  }
+  destroy() {
+    this.destroyed = true;
+    if (this.trackingWatcher) {
+      try {
+        this.trackingWatcher.close();
+      } catch {}
+      this.trackingWatcher = null;
+    }
+    if (this.branchWatcher) {
+      try {
+        this.branchWatcher.close();
+      } catch {}
+      this.branchWatcher = null;
+    }
+    if (this.trackingDebounceTimer) {
+      clearTimeout(this.trackingDebounceTimer);
+      this.trackingDebounceTimer = null;
+    }
+    if (this.branchDebounceTimer) {
+      clearTimeout(this.branchDebounceTimer);
+      this.branchDebounceTimer = null;
+    }
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
+  }
+}
+
 // src/tui/app.ts
 function createAppState(branch, reasoningGroups, trackingDir) {
   return {
@@ -21373,9 +21547,6 @@ async function visualizeCommand(options) {
   const treeView = new TreeView(renderer, state);
   let currentBranch = branch;
   const gitHeadPath = path5.join(repoRoot, ".git", "HEAD");
-  let trackingWatcher = null;
-  let branchWatcher = null;
-  let debounceTimer = null;
   const reloadData = async (branchChanged = false) => {
     const { branch: newBranch, reasoningGroups: newGroups } = await loadBranchData(repoRoot, trackingDir);
     if (branchChanged || newBranch !== currentBranch) {
@@ -21385,33 +21556,19 @@ async function visualizeCommand(options) {
       treeView.updateData(newGroups);
     }
   };
-  try {
-    await fs4.promises.mkdir(trackingDir, { recursive: true });
-    trackingWatcher = fs4.watch(trackingDir, (eventType, filename) => {
-      if (filename && filename.endsWith(".json")) {
-        if (debounceTimer)
-          clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => reloadData(), 100);
-      }
-    });
-  } catch {}
-  try {
-    branchWatcher = fs4.watch(gitHeadPath, () => {
-      if (debounceTimer)
-        clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => reloadData(true), 100);
-    });
-  } catch {}
+  const fileWatcher = new FileWatcher({
+    trackingDir,
+    gitHeadPath,
+    repoRoot,
+    onTrackingChange: () => reloadData(),
+    onBranchChange: () => reloadData(true),
+    pollIntervalMs: 1e4
+  });
   renderer.keyInput.on("keypress", (event) => {
     const key = event.name;
     switch (key) {
       case "q":
-        if (trackingWatcher)
-          trackingWatcher.close();
-        if (branchWatcher)
-          branchWatcher.close();
-        if (debounceTimer)
-          clearTimeout(debounceTimer);
+        fileWatcher.destroy();
         treeView.destroy();
         renderer.destroy();
         process.exit(0);

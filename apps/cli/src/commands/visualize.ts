@@ -1,10 +1,10 @@
 import pc from 'picocolors';
-import * as fs from 'fs';
 import * as path from 'path';
 import { createCliRenderer } from '@opentui/core';
 import { getCurrentBranch, getBranchCommits, isGitRepo, getRepoRoot } from '../utils/git.js';
 import { loadTrackingFiles, getTrackedCommits, aggregateByReasoning } from '../utils/tracking.js';
 import { loadSettings, getTrackingDirectory } from '../utils/settings.js';
+import { FileWatcher } from '../utils/file-watcher.js';
 import { createAppState } from '../tui/app.js';
 import { TreeView } from '../tui/tree-view.js';
 
@@ -73,11 +73,8 @@ export async function visualizeCommand(options: VisualizeOptions): Promise<void>
   // Track current branch to detect switches
   let currentBranch = branch;
 
-  // Watch for new tracking files
+  // Set up file watching for tracking files and branch changes
   const gitHeadPath = path.join(repoRoot, '.git', 'HEAD');
-  let trackingWatcher: fs.FSWatcher | null = null;
-  let branchWatcher: fs.FSWatcher | null = null;
-  let debounceTimer: NodeJS.Timeout | null = null;
 
   const reloadData = async (branchChanged = false) => {
     const { branch: newBranch, reasoningGroups: newGroups } = await loadBranchData(repoRoot, trackingDir);
@@ -92,29 +89,15 @@ export async function visualizeCommand(options: VisualizeOptions): Promise<void>
     }
   };
 
-  // Watch tracking directory for new tracking files
-  try {
-    // Ensure directory exists before watching (for global storage)
-    await fs.promises.mkdir(trackingDir, { recursive: true });
-    trackingWatcher = fs.watch(trackingDir, (eventType, filename) => {
-      if (filename && filename.endsWith('.json')) {
-        if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => reloadData(), 100);
-      }
-    });
-  } catch {
-    // Directory might not exist yet
-  }
-
-  // Watch .git/HEAD for branch switches
-  try {
-    branchWatcher = fs.watch(gitHeadPath, () => {
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => reloadData(true), 100);
-    });
-  } catch {
-    // .git/HEAD might not be accessible
-  }
+  // Create file watcher with separate debounce timers and polling fallback
+  const fileWatcher = new FileWatcher({
+    trackingDir,
+    gitHeadPath,
+    repoRoot,
+    onTrackingChange: () => reloadData(),
+    onBranchChange: () => reloadData(true),
+    pollIntervalMs: 10000,
+  });
 
   // Handle keyboard input
   renderer.keyInput.on('keypress', (event) => {
@@ -122,9 +105,7 @@ export async function visualizeCommand(options: VisualizeOptions): Promise<void>
 
     switch (key) {
       case 'q':
-        if (trackingWatcher) trackingWatcher.close();
-        if (branchWatcher) branchWatcher.close();
-        if (debounceTimer) clearTimeout(debounceTimer);
+        fileWatcher.destroy();
         treeView.destroy();
         renderer.destroy();
         process.exit(0);
