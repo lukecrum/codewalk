@@ -1,6 +1,6 @@
 {
   "name": "@codewalk/claude-plugin",
-  "version": "1.0.4",
+  "version": "1.0.6",
   "description": "Claude marketplace plugin for codewalk - track AI-assisted code changes",
   "keywords": [
     "claude",
@@ -15,5 +15,8 @@
     "hooks",
     "commands",
     "README.md"
-  ]
+  ],
+  "scripts": {
+    "postversion": "node -e \"const fs=require('fs'); const pkg=require('./package.json'); const mp='../.claude-plugin/marketplace.json'; const m=JSON.parse(fs.readFileSync(mp)); m.plugins[0].version=pkg.version; fs.writeFileSync(mp,JSON.stringify(m,null,2)+'\\n');\""
+  }
 }

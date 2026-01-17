@@ -1,6 +1,5 @@
 {
   "name": "codewalk",
-  "version": "1.0.0",
   "description": "Track and visualize AI-assisted code changes with structured reasoning",
   "author": {
     "name": "Luke Crum"
