@@ -21407,7 +21407,7 @@ class TreeView {
       this.footerBox.remove(child.id);
     }
     const totalItems = this.selectableItems.length;
-    const currentPos = this.state.selectedIndex + 1;
+    const currentPos = totalItems > 0 ? this.state.selectedIndex + 1 : 0;
     const footerText = new TextRenderable(this.renderer, {
       content: `\u2191/\u2193 or scroll: navigate \u2502 Enter/click: expand \u2502 q: quit          [${currentPos}/${totalItems}]`,
       fg: "#888888"
