@@ -7,12 +7,7 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "npm run dev -w @codewalk/web",
-    "build": "npm run build -w @codewalk/web",
-    "build:web": "npm run build -w @codewalk/web",
-    "build:cli": "npm run build -w codewalk",
-    "start": "npm run start -w @codewalk/web",
-    "lint": "npm run lint -w @codewalk/web",
+    "build": "npm run build -w codewalk",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "keywords": ["codewalk", "monorepo", "code-review", "ai"],
