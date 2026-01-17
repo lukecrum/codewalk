@@ -1,4 +1,4 @@
-# codewalk
+![codewalk](logo.png)
 
 A toolkit for tracking and visualizing AI-assisted code changes with structured reasoning.
 
