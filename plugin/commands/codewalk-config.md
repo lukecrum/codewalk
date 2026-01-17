@@ -62,24 +62,6 @@ Ensure the `.claude/` directory exists, then use the Write tool to create `.clau
 storage: <global or local>
 globalDir: <path, default ~/.codewalk>
 ---
-
-# Codewalk Configuration
-
-This file configures codewalk for this project.
-
-## Current Settings
-
-- **Storage**: <global or local>
-  - global: Tracking files in `<globalDir>/<repo-name>/`
-  - local: Tracking files in `.codewalk/` directory (untracked)
-
-- **Global Directory**: <path>
-  - Where tracking files are stored outside the repo
-  - Only applies when storage is global
-
-## Changing Settings
-
-Edit the YAML frontmatter above and restart Claude Code for changes to take effect.
 ```
 
 ## Step 6: Confirm to User
