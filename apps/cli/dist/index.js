@@ -20698,8 +20698,9 @@ function getTrackedCommits(trackedCommits) {
 }
 function aggregateByReasoning(cwd, trackedCommits) {
   const reasoningMap = new Map;
+  let insertionCounter = 0;
   const commitDiffs = new Map;
-  for (const tc of trackedCommits) {
+  for (const tc of [...trackedCommits].reverse()) {
     if (!tc.tracking)
       continue;
     if (!commitDiffs.has(tc.commit.shortSha)) {
@@ -20711,7 +20712,8 @@ function aggregateByReasoning(cwd, trackedCommits) {
       if (!reasoningMap.has(key)) {
         reasoningMap.set(key, {
           reasoning: change.reasoning,
-          files: []
+          files: [],
+          insertionOrder: insertionCounter++
         });
       }
       const group = reasoningMap.get(key);
@@ -20740,7 +20742,7 @@ function aggregateByReasoning(cwd, trackedCommits) {
       }
     }
   }
-  return Array.from(reasoningMap.values()).filter((group) => group.files.length > 0).sort((a, b) => b.files.length - a.files.length);
+  return Array.from(reasoningMap.values()).filter((group) => group.files.length > 0).sort((a, b) => a.insertionOrder - b.insertionOrder);
 }
 
 // src/utils/settings.ts
@@ -21018,32 +21020,6 @@ function hunksToUnifiedDiff(filePath, hunks) {
     diff += hunk.content;
   }
   return diff;
-}
-function getFileType(filePath) {
-  const ext = filePath.split(".").pop()?.toLowerCase();
-  const typeMap = {
-    ts: "typescript",
-    tsx: "tsx",
-    js: "javascript",
-    jsx: "jsx",
-    py: "python",
-    rb: "ruby",
-    go: "go",
-    rs: "rust",
-    java: "java",
-    c: "c",
-    cpp: "cpp",
-    h: "c",
-    hpp: "cpp",
-    css: "css",
-    scss: "scss",
-    html: "html",
-    json: "json",
-    md: "markdown",
-    yaml: "yaml",
-    yml: "yaml"
-  };
-  return ext ? typeMap[ext] : undefined;
 }
 
 class TreeView {
@@ -21331,7 +21307,6 @@ class TreeView {
           });
           if (isFileExpanded && file.hunks.length > 0) {
             const diffContent = hunksToUnifiedDiff(file.path, file.hunks);
-            const fileType = getFileType(file.path);
             const diffBox = new BoxRenderable(this.renderer, {
               width: "100%",
               border: true,
@@ -21347,7 +21322,6 @@ class TreeView {
               diff: diffContent,
               view: "unified",
               showLineNumbers: true,
-              filetype: fileType,
               addedBg: "#1a3d1a",
               removedBg: "#3d1a1a",
               contextBg: "#1a1a2e",

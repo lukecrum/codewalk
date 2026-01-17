@@ -18,6 +18,7 @@ export interface FileWithHunks {
 export interface ReasoningGroup {
   reasoning: string;
   files: FileWithHunks[];
+  insertionOrder: number;
 }
 
 export async function loadTrackingFiles(
@@ -56,11 +57,13 @@ export function aggregateByReasoning(
   trackedCommits: TrackedCommit[]
 ): ReasoningGroup[] {
   const reasoningMap = new Map<string, ReasoningGroup>();
+  let insertionCounter = 0;
 
   // Build a map of commit SHA to file diffs for quick lookup
   const commitDiffs = new Map<string, FileDiff[]>();
 
-  for (const tc of trackedCommits) {
+  // Process commits oldest-first (git returns newest-first)
+  for (const tc of [...trackedCommits].reverse()) {
     if (!tc.tracking) continue;
 
     // Get diffs for this commit (lazy load)
@@ -77,6 +80,7 @@ export function aggregateByReasoning(
         reasoningMap.set(key, {
           reasoning: change.reasoning,
           files: [],
+          insertionOrder: insertionCounter++,
         });
       }
 
@@ -115,8 +119,8 @@ export function aggregateByReasoning(
     }
   }
 
-  // Convert map to array and sort by number of files (most impactful first)
+  // Convert map to array and sort chronologically (oldest first)
   return Array.from(reasoningMap.values())
     .filter((group) => group.files.length > 0)
-    .sort((a, b) => b.files.length - a.files.length);
+    .sort((a, b) => a.insertionOrder - b.insertionOrder);
 }
