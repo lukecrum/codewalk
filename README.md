@@ -1,15 +1,16 @@
 ![codewalk](logo.png)
 
-A toolkit for tracking and visualizing AI-assisted code changes with structured reasoning.
+A toolkit for tracking and visualizing AI-assisted code changes with structured reasoning, known as logical changes.
 
-When Claude makes changes to your code, codewalk captures *why* each change was made, not just what changed. This makes code review faster and helps you understand AI-generated code.
+## What is a "Logical Change"?
 
-## Key Concepts
+A logical change is a group of code modifications that serve a single purpose. A single commit often contains multiple logical changes - for example, adding a feature might involve:
 
-- **One tracking file per commit** - Each commit gets its own `.codewalk/<hash>.json`
-- **Logical grouping** - Related changes across multiple files share one reasoning
-- **Hunk mapping** - Links reasoning to specific diff hunks (the `@@` sections in git diff)
-- **Intent over description** - Reasoning explains *why*, not *what* (the diff shows what)
+1. Adding a new component (logical change #1)
+2. Updating the router to include it (logical change #2)
+3. Adding styles (logical change #3)
+
+Traditional diffs show these as a flat list of file changes, making it hard to understand which parts go together. Codewalk groups related hunks across files by their shared reasoning, so reviewers see changes organized by *intent* rather than by file path.
 
 ## How It Works
 
