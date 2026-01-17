@@ -1944,203 +1944,10 @@ var {
   Help
 } = import__.default;
 
-// src/commands/init.ts
-var import_picocolors = __toESM(require_picocolors(), 1);
-import * as fs from "fs/promises";
-import * as path from "path";
-var SKILL_TEMPLATE = `# codewalk
-
-You are codewalk, an AI programming assistant built on top of Claude Code.
-
-Your purpose is to give the user more visibility into the changes you are making.
-
-The current functionality you follow is to make changes, asking for permission if needed as you go, and then you provide a brief summary of the changes made after you're done.
-
-In addition to your normal summary, you should also keep track of what you changed in a structured file.
-
-The purpose of the file is to walk the user through the code changes step-by-step so that they can understand the code changes you made, why you made them, and how they relate to other changes you made during that task. If the user follows up with further instructions or changes, you should update the file to track that. A full walkthrough can be found below.
-
-User prompts are surrounded by \`<USER>\` tags, your code changes are surrounded by \`<ASSISTANT>\` tags, example tracking files are surrounded by \`<TRACK>\` tags, and notes are surrounded in \`<NOTE>\` tags.
-
-## Tracking File Schema
-
-\`\`\`typescript
-type Changeset = {
-  // Schema version for forward compatibility
-  version: number;
-
-  // Git commit SHA this changeset describes
-  commit: string;
-
-  // Who made the changes (human name, "claude", etc.)
-  author: string;
-
-  // List of logical changes, each with its own reasoning
-  changes: Change[];
-};
-
-type Change = {
-  // Human-readable explanation of why this change was made.
-  // Should explain the intent, not just describe what changed.
-  reasoning: string;
-
-  // Files affected by this logical change
-  files: FileChange[];
-};
-
-type FileChange = {
-  // Path to the file, relative to repo root
-  path: string;
-
-  // Which hunks from \`git show <commit>\` belong to this change.
-  // 1-indexed, in order of appearance in the diff.
-  // Example: [1, 3] means the first and third hunks in this file's diff.
-  hunks: number[];
-};
-\`\`\`
-
-## Git Commands Reference
-
-- Get current commit hash: \`git rev-parse --short HEAD\`
-- Get commit author: \`git log -1 --format="%an"\`
-- View commit diff with hunks: \`git show <commit> --format=""\`
-- List files changed: \`git show <commit> --name-only --format=""\`
-
-Hunks are numbered 1, 2, 3... in order of appearance. Each \`@@\` line in the diff starts a new hunk.
-
-## Handling Refinements
-
-If the user requests changes to something you just did (e.g., "use different colors", "rename that function"):
-
-1. If it's part of the same logical task, amend the commit: \`git add -A && git commit --amend --no-edit\`
-2. Update the existing tracking file to reflect the final state
-3. The reasoning should describe the final result, not the iteration history
-
-If it's a distinct new task, create a new commit and new tracking file.
-
-## Instructions
-
-1. Before committing, check if a git repo exists with \`git status\`. Only run \`git init\` if there isn't one.
-2. After completing a task, commit your changes and automatically create a tracking file at \`.codewalk/<commit-hash>.json\`
-3. Group hunks by their logical purpose\u2014one reasoning per logical change, even if it spans multiple hunks or multiple files. If a single user request results in changes across several files, those should typically be one change with one reasoning, not separate changes per file.
-4. Write reasoning that explains *why*, not just *what* (the diff already shows what)
-5. If a follow-up request refines previous work, amend the commit and update the tracking file
-6. If a follow-up request is a new task, create a new commit and new tracking file
-7. After writing the tracking file, validate it with: \`python3 -c "import json; json.load(open('.codewalk/<commit-hash>.json'))"\`
-
-Do not wait for the user to ask for the tracking file\u2014create it automatically as part of finishing each task.
-
-**Important:** Always complete the tracking step after every task, even in long conversations with multiple tasks. Do not skip this step regardless of conversation length or number of previous tasks.
-`;
-var CLAUDE_MD_CONTENT = `# codewalk
-
-**CRITICAL REQUIREMENT**: You MUST create git commits for your changes AND create tracking files after EVERY task. No exceptions.
-
-## Workflow (MANDATORY):
-1. Make your code changes using Write/Edit tools
-2. **COMMIT the changes**: \`git add -A && git commit -m "descriptive message"\`
-3. Get the commit hash: \`git rev-parse --short HEAD\`
-4. **IMMEDIATELY** create \`.codewalk/<commit-hash>.json\` with the tracking data
-5. Commit the tracking file: \`git add .codewalk/<hash>.json && git commit -m "Add tracking file for <hash>"\`
-6. Only THEN respond to the user
-
-**DO NOT** skip commits. **DO NOT** respond to the user until both the code commit AND tracking file commit are done.
-
-See \`.claude/skills/codewalk.md\` for the complete schema and examples.
-`;
-var SETTINGS_CONTENT = {
-  hooks: {
-    Stop: [
-      {
-        hooks: [
-          {
-            type: "prompt",
-            prompt: "Check if the assistant made code changes in this session. If code changes were made, verify: 1) Changes were committed with git, 2) A tracking file was created at .codewalk/<commit-hash>.json, 3) The tracking file was also committed. If any of these are missing, block stopping and instruct to complete the codewalk workflow. If no code changes were made, or all steps are complete, approve stopping.",
-            timeout: 30
-          }
-        ]
-      }
-    ]
-  }
-};
-async function fileExists(filePath) {
-  try {
-    await fs.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
-async function initCommand(options) {
-  const { cwd } = options;
-  console.log(import_picocolors.default.bold(`Initializing codewalk...
-`));
-  const skillsDir = path.join(cwd, ".claude", "skills");
-  await fs.mkdir(skillsDir, { recursive: true });
-  const skillPath = path.join(skillsDir, "codewalk.md");
-  const skillExists = await fileExists(skillPath);
-  if (!skillExists) {
-    await fs.writeFile(skillPath, SKILL_TEMPLATE);
-    console.log(import_picocolors.default.green("\u2713") + " Created .claude/skills/codewalk.md");
-  } else {
-    console.log(import_picocolors.default.yellow("\u25CB") + " .claude/skills/codewalk.md already exists, skipping");
-  }
-  const claudePath = path.join(cwd, "CLAUDE.md");
-  let claudeContent = "";
-  try {
-    claudeContent = await fs.readFile(claudePath, "utf-8");
-  } catch {}
-  if (!claudeContent.includes(".claude/skills/codewalk.md")) {
-    const newContent = claudeContent ? claudeContent + `
-
-` + CLAUDE_MD_CONTENT : CLAUDE_MD_CONTENT;
-    await fs.writeFile(claudePath, newContent);
-    console.log(import_picocolors.default.green("\u2713") + " Updated CLAUDE.md with codewalk instructions");
-  } else {
-    console.log(import_picocolors.default.yellow("\u25CB") + " CLAUDE.md already references codewalk, skipping");
-  }
-  const codewalkDir = path.join(cwd, ".codewalk");
-  const codewalkExists = await fileExists(codewalkDir);
-  await fs.mkdir(codewalkDir, { recursive: true });
-  if (!codewalkExists) {
-    console.log(import_picocolors.default.green("\u2713") + " Created .codewalk/ directory");
-  } else {
-    console.log(import_picocolors.default.yellow("\u25CB") + " .codewalk/ directory already exists");
-  }
-  const settingsPath = path.join(cwd, ".claude", "settings.local.json");
-  let existingSettings = {};
-  try {
-    const content = await fs.readFile(settingsPath, "utf-8");
-    existingSettings = JSON.parse(content);
-  } catch {}
-  const hasStopHook = existingSettings.hooks && typeof existingSettings.hooks === "object" && "Stop" in existingSettings.hooks;
-  if (!hasStopHook) {
-    const mergedSettings = {
-      ...existingSettings,
-      hooks: {
-        ...existingSettings.hooks || {},
-        ...SETTINGS_CONTENT.hooks
-      }
-    };
-    await fs.writeFile(settingsPath, JSON.stringify(mergedSettings, null, 2) + `
-`);
-    console.log(import_picocolors.default.green("\u2713") + " Added Stop hook to .claude/settings.local.json");
-  } else {
-    console.log(import_picocolors.default.yellow("\u25CB") + " Stop hook already configured, skipping");
-  }
-  console.log(import_picocolors.default.bold(`
-codewalk initialized successfully!`));
-  console.log(`
-Next steps:`);
-  console.log("  1. Start Claude Code in this directory");
-  console.log("  2. Make changes - Claude will automatically track them");
-  console.log("  3. Run " + import_picocolors.default.cyan("codewalk visualize") + " to browse changes");
-}
-
 // src/commands/visualize.ts
-var import_picocolors2 = __toESM(require_picocolors(), 1);
-import * as fs5 from "fs";
-import * as path7 from "path";
+var import_picocolors = __toESM(require_picocolors(), 1);
+import * as fs4 from "fs";
+import * as path5 from "path";
 
 // ../../node_modules/@opentui/core/index-cr95zpf8.js
 import { Buffer as Buffer2 } from "buffer";
@@ -2186,9 +1993,9 @@ var tree_sitter_zig_default = "./tree-sitter-zig-e78zbjpm.wasm";
 // ../../node_modules/@opentui/core/index-cr95zpf8.js
 import { resolve as resolve2, isAbsolute, parse } from "path";
 import { existsSync } from "fs";
-import { basename, join as join2 } from "path";
+import { basename, join } from "path";
 import os from "os";
-import path2 from "path";
+import path from "path";
 import { EventEmitter as EventEmitter4 } from "events";
 import { dlopen, toArrayBuffer as toArrayBuffer4, JSCallback, ptr as ptr3 } from "bun:ffi";
 import { existsSync as existsSync2 } from "fs";
@@ -2200,7 +2007,7 @@ import { EventEmitter as EventEmitter6 } from "events";
 import util from "util";
 import { EventEmitter as EventEmitter8 } from "events";
 import { Console } from "console";
-import fs2 from "fs";
+import fs from "fs";
 import path4 from "path";
 import util2 from "util";
 import { Writable } from "stream";
@@ -5916,14 +5723,14 @@ function getParsers() {
   }
   return _cachedParsers;
 }
-function isBunfsPath(path3) {
-  return path3.includes("$bunfs") || /^B:[\\/]~BUN/i.test(path3);
+function isBunfsPath(path2) {
+  return path2.includes("$bunfs") || /^B:[\\/]~BUN/i.test(path2);
 }
 function getBunfsRootPath() {
   return process.platform === "win32" ? "B:\\~BUN\\root" : "/$bunfs/root";
 }
 function normalizeBunfsPath(fileName) {
-  return join2(getBunfsRootPath(), basename(fileName));
+  return join(getBunfsRootPath(), basename(fileName));
 }
 registerEnvVar({
   name: "OTUI_TREE_SITTER_WORKER_PATH",
@@ -5932,7 +5739,7 @@ registerEnvVar({
   default: ""
 });
 var DEFAULT_PARSERS = getParsers();
-var isUrl = (path3) => path3.startsWith("http://") || path3.startsWith("https://");
+var isUrl = (path2) => path2.startsWith("http://") || path2.startsWith("https://");
 
 class TreeSitterClient extends EventEmitter3 {
   initialized = false;
@@ -6032,25 +5839,25 @@ class TreeSitterClient extends EventEmitter3 {
       this.addFiletypeParser(parser);
     }
   }
-  resolvePath(path3) {
-    if (isUrl(path3)) {
-      return path3;
+  resolvePath(path2) {
+    if (isUrl(path2)) {
+      return path2;
     }
-    if (isBunfsPath(path3)) {
-      return normalizeBunfsPath(parse(path3).base);
+    if (isBunfsPath(path2)) {
+      return normalizeBunfsPath(parse(path2).base);
     }
-    if (!isAbsolute(path3)) {
-      return resolve2(path3);
+    if (!isAbsolute(path2)) {
+      return resolve2(path2);
     }
-    return path3;
+    return path2;
   }
   addFiletypeParser(filetypeParser) {
     const resolvedParser = {
       ...filetypeParser,
       wasm: this.resolvePath(filetypeParser.wasm),
       queries: {
-        highlights: filetypeParser.queries.highlights.map((path3) => this.resolvePath(path3)),
-        injections: filetypeParser.queries.injections?.map((path3) => this.resolvePath(path3))
+        highlights: filetypeParser.queries.highlights.map((path2) => this.resolvePath(path2)),
+        injections: filetypeParser.queries.injections?.map((path2) => this.resolvePath(path2))
       }
     };
     this.worker?.postMessage({ type: "ADD_FILETYPE_PARSER", filetypeParser: resolvedParser });
@@ -6471,20 +6278,20 @@ class DataPathsManager extends EventEmitter4 {
     if (this._globalConfigPath === undefined) {
       const homeDir = os.homedir();
       const xdgConfigHome = env.XDG_CONFIG_HOME;
-      const baseConfigDir = xdgConfigHome || path2.join(homeDir, ".config");
-      this._globalConfigPath = path2.join(baseConfigDir, this._appName);
+      const baseConfigDir = xdgConfigHome || path.join(homeDir, ".config");
+      this._globalConfigPath = path.join(baseConfigDir, this._appName);
     }
     return this._globalConfigPath;
   }
   get globalConfigFile() {
     if (this._globalConfigFile === undefined) {
-      this._globalConfigFile = path2.join(this.globalConfigPath, "init.ts");
+      this._globalConfigFile = path.join(this.globalConfigPath, "init.ts");
     }
     return this._globalConfigFile;
   }
   get localConfigFile() {
     if (this._localConfigFile === undefined) {
-      this._localConfigFile = path2.join(process.cwd(), `.${this._appName}.ts`);
+      this._localConfigFile = path.join(process.cwd(), `.${this._appName}.ts`);
     }
     return this._localConfigFile;
   }
@@ -6492,8 +6299,8 @@ class DataPathsManager extends EventEmitter4 {
     if (this._globalDataPath === undefined) {
       const homeDir = os.homedir();
       const xdgDataHome = env.XDG_DATA_HOME;
-      const baseDataDir = xdgDataHome || path2.join(homeDir, ".local/share");
-      this._globalDataPath = path2.join(baseDataDir, this._appName);
+      const baseDataDir = xdgDataHome || path.join(homeDir, ".local/share");
+      this._globalDataPath = path.join(baseDataDir, this._appName);
     }
     return this._globalDataPath;
   }
@@ -13276,7 +13083,7 @@ class TerminalConsole extends EventEmitter8 {
       }
       const content = logLines.join(`
 `);
-      fs2.writeFileSync(filepath, content, "utf8");
+      fs.writeFileSync(filepath, content, "utf8");
       console.info(`Console logs saved to: ${filename}`);
     } catch (error) {
       console.error(`Failed to save console logs:`, error);
@@ -17416,16 +17223,16 @@ class Diff {
       }
     }
   }
-  addToPath(path3, added, removed, oldPosInc, options) {
-    const last = path3.lastComponent;
+  addToPath(path2, added, removed, oldPosInc, options) {
+    const last = path2.lastComponent;
     if (last && !options.oneChangePerToken && last.added === added && last.removed === removed) {
       return {
-        oldPos: path3.oldPos + oldPosInc,
+        oldPos: path2.oldPos + oldPosInc,
         lastComponent: { count: last.count + 1, added, removed, previousComponent: last.previousComponent }
       };
     } else {
       return {
-        oldPos: path3.oldPos + oldPosInc,
+        oldPos: path2.oldPos + oldPosInc,
         lastComponent: { count: 1, added, removed, previousComponent: last }
       };
     }
@@ -20872,15 +20679,15 @@ function getCommitFileDiffs(cwd, commitSha) {
 }
 
 // src/utils/tracking.ts
-import * as fs3 from "fs/promises";
-import * as path3 from "path";
+import * as fs2 from "fs/promises";
+import * as path2 from "path";
 async function loadTrackingFiles(trackingDir, commits) {
   const result = [];
   for (const commit of commits) {
-    const trackingPath = path3.join(trackingDir, `${commit.shortSha}.json`);
+    const trackingPath = path2.join(trackingDir, `${commit.shortSha}.json`);
     let tracking = null;
     try {
-      const content = await fs3.readFile(trackingPath, "utf-8");
+      const content = await fs2.readFile(trackingPath, "utf-8");
       tracking = JSON.parse(content);
     } catch {}
     result.push({ commit, tracking });
@@ -20938,8 +20745,8 @@ function aggregateByReasoning(cwd, trackedCommits) {
 }
 
 // src/utils/settings.ts
-import * as fs4 from "fs/promises";
-import * as path5 from "path";
+import * as fs3 from "fs/promises";
+import * as path3 from "path";
 import * as os2 from "os";
 import { execSync as execSync2 } from "child_process";
 var DEFAULT_SETTINGS = {
@@ -20970,7 +20777,7 @@ function parseYamlFrontmatter(content) {
 }
 function expandTilde(filepath) {
   if (filepath.startsWith("~/")) {
-    return path5.join(os2.homedir(), filepath.slice(2));
+    return path3.join(os2.homedir(), filepath.slice(2));
   }
   if (filepath === "~") {
     return os2.homedir();
@@ -20984,15 +20791,15 @@ function getRepoName(cwd) {
       encoding: "utf-8",
       stdio: ["pipe", "pipe", "pipe"]
     }).trim();
-    return path5.basename(repoRoot);
+    return path3.basename(repoRoot);
   } catch {
-    return path5.basename(cwd);
+    return path3.basename(cwd);
   }
 }
 async function loadSettings(cwd) {
-  const settingsPath = path5.join(cwd, ".claude", "codewalk.local.md");
+  const settingsPath = path3.join(cwd, ".claude", "codewalk.local.md");
   try {
-    const content = await fs4.readFile(settingsPath, "utf-8");
+    const content = await fs3.readFile(settingsPath, "utf-8");
     const parsed = parseYamlFrontmatter(content);
     if (!parsed) {
       return { ...DEFAULT_SETTINGS, globalDir: expandTilde(DEFAULT_SETTINGS.globalDir) };
@@ -21009,9 +20816,9 @@ async function loadSettings(cwd) {
 function getTrackingDirectory(cwd, settings) {
   if (settings.storage === "global") {
     const repoName = getRepoName(cwd);
-    return path5.join(settings.globalDir, repoName);
+    return path3.join(settings.globalDir, repoName);
   }
-  return path5.join(cwd, ".codewalk");
+  return path3.join(cwd, ".codewalk");
 }
 
 // src/tui/app.ts
@@ -21547,15 +21354,15 @@ async function loadBranchData(cwd, trackingDir) {
 async function visualizeCommand(options) {
   const { cwd } = options;
   if (!isGitRepo(cwd)) {
-    console.error(import_picocolors2.default.red("Error: Not a git repository"));
+    console.error(import_picocolors.default.red("Error: Not a git repository"));
     process.exit(1);
   }
   const repoRoot = getRepoRoot(cwd);
   const settings = await loadSettings(repoRoot);
   const trackingDir = getTrackingDirectory(repoRoot, settings);
-  console.log(import_picocolors2.default.dim("Loading tracking data..."));
+  console.log(import_picocolors.default.dim("Loading tracking data..."));
   const { branch, reasoningGroups } = await loadBranchData(repoRoot, trackingDir);
-  console.log(import_picocolors2.default.dim("Starting visualizer..."));
+  console.log(import_picocolors.default.dim("Starting visualizer..."));
   const renderer = await createCliRenderer({
     exitOnCtrlC: true,
     useAlternateScreen: true,
@@ -21565,7 +21372,7 @@ async function visualizeCommand(options) {
   const state = createAppState(branch, reasoningGroups, trackingDir);
   const treeView = new TreeView(renderer, state);
   let currentBranch = branch;
-  const gitHeadPath = path7.join(repoRoot, ".git", "HEAD");
+  const gitHeadPath = path5.join(repoRoot, ".git", "HEAD");
   let trackingWatcher = null;
   let branchWatcher = null;
   let debounceTimer = null;
@@ -21579,8 +21386,8 @@ async function visualizeCommand(options) {
     }
   };
   try {
-    await fs5.promises.mkdir(trackingDir, { recursive: true });
-    trackingWatcher = fs5.watch(trackingDir, (eventType, filename) => {
+    await fs4.promises.mkdir(trackingDir, { recursive: true });
+    trackingWatcher = fs4.watch(trackingDir, (eventType, filename) => {
       if (filename && filename.endsWith(".json")) {
         if (debounceTimer)
           clearTimeout(debounceTimer);
@@ -21589,7 +21396,7 @@ async function visualizeCommand(options) {
     });
   } catch {}
   try {
-    branchWatcher = fs5.watch(gitHeadPath, () => {
+    branchWatcher = fs4.watch(gitHeadPath, () => {
       if (debounceTimer)
         clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => reloadData(true), 100);
@@ -21636,15 +21443,7 @@ async function visualizeCommand(options) {
 
 // src/index.ts
 var program2 = new Command;
-program2.name("codewalk").description("CLI tool for visualizing AI-assisted code changes").version("0.1.0");
-program2.command("init").description("Initialize codewalk in the current project").action(async () => {
-  try {
-    await initCommand({ cwd: process.cwd() });
-  } catch (error) {
-    console.error("Error:", error instanceof Error ? error.message : error);
-    process.exit(1);
-  }
-});
+program2.name("codewalk").description("CLI tool for visualizing AI-assisted code changes").version("0.1.3");
 program2.command("visualize").alias("viz").description("Open TUI to visualize tracked changes on the current branch").action(async () => {
   try {
     await visualizeCommand({ cwd: process.cwd() });
