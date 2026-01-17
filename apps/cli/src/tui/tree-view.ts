@@ -19,34 +19,6 @@ function hunksToUnifiedDiff(filePath: string, hunks: ParsedHunk[]): string {
   return diff;
 }
 
-// Get file extension for syntax highlighting
-function getFileType(filePath: string): string | undefined {
-  const ext = filePath.split('.').pop()?.toLowerCase();
-  const typeMap: Record<string, string> = {
-    ts: 'typescript',
-    tsx: 'tsx',
-    js: 'javascript',
-    jsx: 'jsx',
-    py: 'python',
-    rb: 'ruby',
-    go: 'go',
-    rs: 'rust',
-    java: 'java',
-    c: 'c',
-    cpp: 'cpp',
-    h: 'c',
-    hpp: 'cpp',
-    css: 'css',
-    scss: 'scss',
-    html: 'html',
-    json: 'json',
-    md: 'markdown',
-    yaml: 'yaml',
-    yml: 'yaml',
-  };
-  return ext ? typeMap[ext] : undefined;
-}
-
 interface SelectableItem {
   type: 'reasoning' | 'file';
   reasoningIdx: number;
@@ -447,7 +419,6 @@ export class TreeView {
           // If file is expanded, show diff
           if (isFileExpanded && file.hunks.length > 0) {
             const diffContent = hunksToUnifiedDiff(file.path, file.hunks);
-            const fileType = getFileType(file.path);
 
             const diffBox = new BoxRenderable(this.renderer, {
               width: '100%',
@@ -465,7 +436,6 @@ export class TreeView {
               diff: diffContent,
               view: 'unified',
               showLineNumbers: true,
-              filetype: fileType,
               addedBg: '#1a3d1a',
               removedBg: '#3d1a1a',
               contextBg: '#1a1a2e',
