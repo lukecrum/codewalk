@@ -9,7 +9,7 @@
   "scripts": {
     "build": "npm run build -w codewalk",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "publish-cli": "node publish-cli.js"
+    "publish-cli": "node scripts/publish-cli.js"
   },
   "keywords": ["codewalk", "monorepo", "code-review", "ai"],
   "author": "",

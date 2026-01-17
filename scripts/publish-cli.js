@@ -3,7 +3,7 @@
 import { execSync } from "child_process";
 import { join } from "path";
 
-const CLI_DIR = join(import.meta.dirname, "apps/cli");
+const CLI_DIR = join(import.meta.dirname, "../apps/cli");
 
 function run(cmd, options = {}) {
   console.log(`> ${cmd}`);
