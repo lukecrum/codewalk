@@ -16,9 +16,7 @@ Traditional diffs show these as a flat list of file changes, making it hard to u
 
 ```json
 {
-  "version": 1,
   "commit": "a1b2c3d",
-  "author": "claude",
   "changes": [
     {
       "reasoning": "Add dark mode toggle that persists to localStorage",

@@ -56,14 +56,8 @@ Optional markdown notes here (ignored by the plugin).
 
 ```typescript
 type Changeset = {
-  // Schema version for forward compatibility
-  version: number;
-
   // Git commit SHA this changeset describes
   commit: string;
-
-  // Who made the changes (human name, "claude", etc.)
-  author: string;
 
   // List of logical changes, each with its own reasoning
   changes: Change[];
@@ -91,7 +85,6 @@ type FileChange = {
 ## Git Commands Reference
 
 - Get current commit hash: `git rev-parse --short HEAD`
-- Get commit author: `git log -1 --format="%an"`
 - View commit diff with hunks: `git show <commit> --format=""`
 - List files changed: `git show <commit> --name-only --format=""`
 
@@ -175,9 +168,7 @@ I'll make two changes:
 <TRACK file="~/.codewalk/task-manager/a1b2c3d.json">
 ```json
 {
-  "version": 1,
   "commit": "a1b2c3d",
-  "author": "claude",
   "changes": [
     {
       "reasoning": "Add visual status indicators using color-coded left borders. Orange signals pending, green signals completed.",
@@ -218,9 +209,7 @@ Since this is all one logical change, group everything under ONE reasoning.
 <TRACK file="~/.codewalk/notes-app/c3d4e5f.json">
 ```json
 {
-  "version": 1,
   "commit": "c3d4e5f",
-  "author": "claude",
   "changes": [
     {
       "reasoning": "Add dark mode toggle that persists to localStorage. Includes toggle button, CSS dark theme with transitions, and JS logic to save/load preference.",

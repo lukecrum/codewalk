@@ -4,14 +4,8 @@
  */
 
 export type Changeset = {
-  // Schema version for forward compatibility
-  version: number;
-
   // Git commit SHA this changeset describes
   commit: string;
-
-  // Who made the changes (human name, "claude", etc.)
-  author: string;
 
   // List of logical changes, each with its own reasoning
   changes: Change[];
