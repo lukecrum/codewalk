@@ -3,8 +3,8 @@
   "hooks": [
     {
       "type": "prompt",
-      "prompt": "Check if the assistant made code changes in this session. If no code changes were made, approve stopping.\n\nIf code changes were made:\n1. Check if `.claude/codewalk.local.md` exists and parse its YAML frontmatter for settings\n2. Use defaults if no settings file: storage=local, autoCommit=true, globalDir=~/.codewalk\n\nVerify based on storage mode:\n- **local + autoCommit:true**: Code was committed AND tracking file is included in the commit (verify with `git show --name-only HEAD | grep .codewalk/`)\n- **local + autoCommit:false**: Code was committed AND tracking file exists at `.codewalk/<hash>.json` (should be untracked)\n- **global**: Code was committed AND tracking file exists at `<globalDir>/<repo-name>/<hash>.json`\n\nIf verification fails, block stopping and instruct to complete the codewalk workflow. If all verifications pass, approve stopping.",
-      "timeout": 60
+      "prompt": "Check if there are any uncommitted code changes (use `git status --porcelain`). Also check if the last code commit has a corresponding tracking file.\n\nIf there are uncommitted code changes OR the last code commit lacks a tracking file:\n1. Read `.claude/codewalk.local.md` if it exists and parse its YAML frontmatter for settings. Use defaults if no settings file: storage=local, autoCommit=true, globalDir=~/.codewalk\n2. Complete the codewalk workflow:\n   - If uncommitted changes exist: commit them with a descriptive message (`git add -A && git commit -m \"descriptive message\"`)\n   - Get the commit hash: `git rev-parse --short HEAD`\n   - Create the tracking file following the SKILL.md schema with reasoning explaining WHY each change was made\n   - For local+autoCommit:true: commit the tracking file separately\n   - For local+autoCommit:false: leave tracking file untracked\n   - For global: save to <globalDir>/<repo-name>/<hash>.json\n3. Validate the JSON file\n\nAfter completing the workflow (or if no code changes were made), approve stopping.",
+      "timeout": 120
     }
   ]
 }
