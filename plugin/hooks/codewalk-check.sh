@@ -1,5 +1,45 @@
 #!/bin/bash
 
+# Codewalk Stop Hook - Session-Aware
+# Only enforces tracking when THIS session wrote/deleted code
+
+# Parse stdin JSON for transcript_path
+STDIN_JSON=$(cat)
+TRANSCRIPT_PATH=$(echo "$STDIN_JSON" | jq -r '.transcript_path // empty')
+
+# If no transcript path, fall back to full checks (conservative)
+RUN_CHECKS=false
+if [ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ]; then
+  RUN_CHECKS=true
+else
+  # Check for compaction marker - if compacted, can't trust transcript completeness
+  COMPACTED=$(grep -c '"subtype".*"compact_boundary"' "$TRANSCRIPT_PATH" 2>/dev/null || echo 0)
+
+  # Check for code-modifying tool calls (Write, Edit)
+  WROTE_CODE=$(grep -cE '"tool":\s*"(Write|Edit)"' "$TRANSCRIPT_PATH" 2>/dev/null || echo 0)
+
+  # Check for file deletion via Bash (rm or git rm)
+  DELETED=$(grep -E '"tool":\s*"Bash"' "$TRANSCRIPT_PATH" 2>/dev/null | grep -cE '(rm |git rm)' || echo 0)
+
+  if [ "$COMPACTED" -gt 0 ]; then
+    # Compaction happened - can't trust transcript, run full checks
+    RUN_CHECKS=true
+  elif [ "$WROTE_CODE" -gt 0 ] || [ "$DELETED" -gt 0 ]; then
+    # Detected code changes in transcript
+    RUN_CHECKS=true
+  fi
+fi
+
+# If no code changes detected in this session, allow stop
+if [ "$RUN_CHECKS" = false ]; then
+  exit 0
+fi
+
+# Skip merge commits (they have a second parent)
+if git rev-parse --verify HEAD^2 &>/dev/null; then
+  exit 0
+fi
+
 # Check for uncommitted changes
 if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
   echo '{"decision": "block", "reason": "Uncommitted code changes detected. Run: git add -A && git commit -m \"descriptive message\", then create the codewalk tracking file."}' >&2
