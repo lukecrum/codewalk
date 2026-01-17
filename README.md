@@ -1,4 +1,4 @@
-> Note: this package is in an early alpha. Any bugs can be submitted as GitHub issues
+> Note: this project is in an early alpha. Any bugs can be submitted as GitHub issues
 
 ![codewalk](logo.png)
 
