@@ -1,6 +1,6 @@
 {
   "name": "codewalk",
-  "version": "0.1.9",
+  "version": "0.1.11",
   "type": "module",
   "description": "CLI tool for visualizing AI-assisted code changes",
   "bin": {
