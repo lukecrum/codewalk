@@ -1,3 +1,5 @@
+> Note: this package is in an early alpha. Any bugs can be submitted as GitHub issues
+
 ![codewalk](logo.png)
 
 A toolkit for tracking and visualizing AI-assisted code changes with structured reasoning, known as **_logical changes_**.
