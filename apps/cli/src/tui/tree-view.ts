@@ -296,7 +296,7 @@ export class TreeView {
 
     const totalChanges = this.state.reasoningGroups.length;
     const headerText = new TextRenderable(this.renderer, {
-      content: ` codewalk - ${this.state.branch} (${totalChanges} logical changes)`,
+      content: ` codewalk - ${this.state.branch} (${totalChanges} logical change${totalChanges !== 1 ? 's' : ''})`,
       fg: '#88ccff',
       flexGrow: 1,
     });
@@ -546,7 +546,7 @@ export class TreeView {
     const currentPos = this.state.selectedIndex + 1;
 
     const footerText = new TextRenderable(this.renderer, {
-      content: `j/k: navigate │ Enter/click: expand │ q: quit          [${currentPos}/${totalItems}]`,
+      content: `↑/↓ or scroll: navigate │ Enter/click: expand │ q: quit          [${currentPos}/${totalItems}]`,
       fg: '#888888',
     });
     this.footerBox.add(footerText);
