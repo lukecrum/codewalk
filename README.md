@@ -30,11 +30,10 @@ Groups all changes by their reasoning text across commits, sorted by impact (mos
 
 ### Installation
 
-```bash
-# Add the marketplace
+```
 /plugin marketplace add lukecrum/codewalk
-
-# Install codewalk
+```
+```
 /plugin install codewalk
 ```
 
@@ -68,7 +67,6 @@ globalDir: ~/.codewalk
 
 **Global storage** (`storage: global`) - Default:
 - Tracking files stored in `<~ or path>/.codewalk/<repo-name>/<hash>.json`
-- Files are NOT in the git repo (never committed)
 - Best for: Personal tracking without adding files to the repo
 
 **Local storage** (`storage: local`):
@@ -125,8 +123,10 @@ type FileChange = {
 
 ## Appendix B - Visualizer controls
 
-- `↑`/`↓` or `j`/`k` - Navigate
-- `Enter` or `Space` - Expand/collapse
-- `g`/`G` - Jump to top/bottom
-- `q` - Quit
-- Mouse scroll and click supported
+| Key | Action |
+|-----|--------|
+| `↑`/`↓` or `j`/`k` | Navigate |
+| `Enter` or `Space` | Expand/collapse |
+| `g`/`G` | Jump to top/bottom |
+| `q` | Quit |
+| Mouse scroll/click | Supported |
