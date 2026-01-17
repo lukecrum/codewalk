@@ -12,43 +12,19 @@ A logical change is a group of code modifications that serve a single purpose. A
 
 Traditional diffs show these as a flat list of file changes, making it hard to understand which parts go together. Codewalk groups related hunks across files by their shared reasoning, so reviewers see changes organized by *intent* rather than by file path.
 
-## Tracking files
-
-```json
-{
-  "commit": "a1b2c3d",
-  "changes": [
-    {
-      "reasoning": "Add dark mode toggle that persists to localStorage",
-      "files": [
-        { "path": "src/App.tsx", "hunks": [1, 2] },
-        { "path": "src/styles.css", "hunks": [1] }
-      ]
-    }
-  ]
-}
-```
-
-This tells reviewers: "Hunks 1-2 in App.tsx and hunk 1 in styles.css all work together to add a dark mode toggle with persistence."
-
 ## Visualizer
 
 Interactive TUI for viewing logical changes on the current branch:
 
 ```bash
-npx codewalk visualize   # or: npx codewalk viz
+npx codewalk visualize   # or viz
+```
+or
+```bash
+bunx codewalk visualize   # or viz
 ```
 
 Groups all changes by their reasoning text across commits, sorted by impact (most files first). Shows the current branch, tracking directory, and actual diff hunks with syntax highlighting.
-
-**Controls:**
-- `↑`/`↓` or `j`/`k` - Navigate
-- `Enter` or `Space` - Expand/collapse
-- `g`/`G` - Jump to top/bottom
-- `q` - Quit
-- Mouse scroll and click supported
-
-**Live updates:** Watches for new tracking files and branch switches automatically.
 
 ## Claude Code Plugin
 
@@ -91,10 +67,39 @@ globalDir: ~/.codewalk
 ### Storage Modes
 
 **Global storage** (`storage: global`) - Default:
-- Tracking files stored in `~/.codewalk/<repo-name>/<hash>.json`
+- Tracking files stored in `<~ or path>/.codewalk/<repo-name>/<hash>.json`
 - Files are NOT in the git repo (never committed)
 - Best for: Personal tracking without adding files to the repo
 
 **Local storage** (`storage: local`):
 - Tracking files stored in `.codewalk/<hash>.json` in the project
 - Best for: Projects where team visibility of tracking data is important
+
+## Appendix A - Tracking files
+
+### Schema
+
+
+### Example
+```json
+{
+  "commit": "a1b2c3d",
+  "changes": [
+    {
+      "reasoning": "Add dark mode toggle that persists to localStorage",
+      "files": [
+        { "path": "src/App.tsx", "hunks": [1, 2] },
+        { "path": "src/styles.css", "hunks": [1] }
+      ]
+    }
+  ]
+}
+```
+
+## Appendix B - Visualizer controls
+
+- `↑`/`↓` or `j`/`k` - Navigate
+- `Enter` or `Space` - Expand/collapse
+- `g`/`G` - Jump to top/bottom
+- `q` - Quit
+- Mouse scroll and click supported
