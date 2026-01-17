@@ -543,7 +543,7 @@ export class TreeView {
     }
 
     const totalItems = this.selectableItems.length;
-    const currentPos = this.state.selectedIndex + 1;
+    const currentPos = totalItems > 0 ? this.state.selectedIndex + 1 : 0;
 
     const footerText = new TextRenderable(this.renderer, {
       content: `↑/↓ or scroll: navigate │ Enter/click: expand │ q: quit          [${currentPos}/${totalItems}]`,
