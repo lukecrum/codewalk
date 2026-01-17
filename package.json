@@ -4,13 +4,11 @@
   "private": true,
   "description": "codewalk monorepo - AI-assisted code change visualization",
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "apps/*"
   ],
   "scripts": {
     "dev": "npm run dev -w @codewalk/web",
-    "build": "npm run build -w @codewalk/types && npm run build -w @codewalk/web",
-    "build:types": "npm run build -w @codewalk/types",
+    "build": "npm run build -w @codewalk/web",
     "build:web": "npm run build -w @codewalk/web",
     "build:cli": "npm run build -w codewalk",
     "start": "npm run start -w @codewalk/web",

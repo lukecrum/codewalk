@@ -1,5 +1,5 @@
 import { Octokit } from '@octokit/rest';
-import { CommitInfo, FileDiff, ParsedHunk } from '@codewalk/types';
+import { CommitInfo, FileDiff, ParsedHunk } from './types';
 
 export function getOctokit(token?: string) {
   return new Octokit({

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOctokit, getTrackingFile, parseHunks } from '@/lib/github';
-import { Changeset, FileDiff } from '@codewalk/types';
+import { Changeset, FileDiff } from '@/lib/types';
 
 type FileWithTracking = {
   path: string;
