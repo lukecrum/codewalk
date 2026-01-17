@@ -79,6 +79,33 @@ globalDir: ~/.codewalk
 
 ### Schema
 
+```typescript
+type Changeset = {
+  // Git commit SHA this changeset describes
+  commit: string;
+
+  // List of logical changes, each with its own reasoning
+  changes: Change[];
+};
+
+type Change = {
+  // Human-readable explanation of why this change was made.
+  // Should explain the intent, not just describe what changed.
+  reasoning: string;
+
+  // Files affected by this logical change
+  files: FileChange[];
+};
+
+type FileChange = {
+  // Path to the file, relative to repo root
+  path: string;
+
+  // Which hunks from `git show <commit>` belong to this change.
+  // 1-indexed, in order of appearance in the diff.
+  hunks: number[];
+};
+```
 
 ### Example
 ```json
