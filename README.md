@@ -32,9 +32,24 @@ or
 bunx codewalk visualize
 ```
 
+## Configure Command
+
+Run the interactive configuration wizard to set up codewalk for your project:
+
+```
+/codewalk-config
+```
+
+This command will prompt you to choose:
+- **Storage mode**: Local (in-repo) or global (outside repo)
+- **Auto-commit**: Whether tracking files should be committed automatically
+- **Global directory**: Custom path for global storage (if using global mode)
+
+Settings are saved to `.claude/codewalk.local.md`.
+
 ## Plugin Settings
 
-Codewalk can be configured via `.claude/codewalk.local.md` in your project root. If no settings file exists, defaults are used.
+Codewalk can be configured via `.claude/codewalk.local.md` in your project root. If no settings file exists, defaults are used. You can create this file manually or use the `/codewalk-config` command above.
 
 ### Settings File Format
 
