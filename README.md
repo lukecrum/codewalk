@@ -24,7 +24,7 @@ or
 bunx codewalk visualize   # or viz
 ```
 
-Groups all changes by their reasoning text across commits, sorted by impact (most files first). Shows the current branch, tracking directory, and actual diff hunks with syntax highlighting.
+Groups all changes by their reasoning text across commits, sorted chronologically (oldest first). Shows the current branch, tracking directory, and actual diff hunks.
 
 ## Claude Code Plugin
 
