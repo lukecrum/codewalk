@@ -90,7 +90,7 @@ type FileChange = {
 - View commit diff with hunks: `git show <commit> --format=""`
 - List files changed: `git show <commit> --name-only --format=""`
 
-Hunks are numbered 1, 2, 3... in order of appearance. Each `@@` line in the diff starts a new hunk.
+Hunks are numbered 1, 2, 3... **per file**, in order of appearance. Each `@@` line in the diff starts a new hunk. Numbering resets to 1 for each file in the commit.
 
 ## Instructions
 
