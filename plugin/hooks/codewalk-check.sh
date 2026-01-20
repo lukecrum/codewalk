@@ -16,10 +16,10 @@ else
   COMPACTED=$(grep -c '"subtype".*"compact_boundary"' "$TRANSCRIPT_PATH" 2>/dev/null || echo 0)
 
   # Check for code-modifying tool calls (Write, Edit)
-  WROTE_CODE=$(grep -cE '"tool":\s*"(Write|Edit)"' "$TRANSCRIPT_PATH" 2>/dev/null || echo 0)
+  WROTE_CODE=$(grep -cE '"name":\s*"(Write|Edit)"' "$TRANSCRIPT_PATH" 2>/dev/null || echo 0)
 
   # Check for file deletion via Bash (rm or git rm)
-  DELETED=$(grep -E '"tool":\s*"Bash"' "$TRANSCRIPT_PATH" 2>/dev/null | grep -cE '(rm |git rm)' || echo 0)
+  DELETED=$(grep -E '"name":\s*"Bash"' "$TRANSCRIPT_PATH" 2>/dev/null | grep -cE '(rm |git rm)' || echo 0)
 
   if [ "$COMPACTED" -gt 0 ]; then
     # Compaction happened - can't trust transcript, run full checks
