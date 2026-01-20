@@ -47,7 +47,7 @@ Once installed, Claude will automatically create tracking files for every commit
 
 | Command | Description |
 |---------|-------------|
-| `/codewalk:codewalk` | Create a tracking file for the latest commit |
+| `/codewalk:codewalk` | Create a tracking file for the latest changes |
 | `/codewalk:configure` | Interactive configuration wizard |
 
 ### Configuration
