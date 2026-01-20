@@ -1,5 +1,5 @@
 ---
-name: Codewalk
+name: codewalk
 description: This skill should be used when the user asks to "track changes", "explain code changes", "create a walkthrough", "document reasoning", or after making any code commits. Automatically creates structured tracking files that explain the reasoning behind each code change, linking explanations to specific git commits and diff hunks. Activate this skill whenever code changes are committed to provide visibility into what was changed and why.
 ---
 
