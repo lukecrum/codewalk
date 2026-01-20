@@ -1,5 +1,5 @@
 ---
-name: Codewalk
+name: codewalk
 description: This skill should be used when the user asks to "track changes", "explain code changes", "create a walkthrough", "document reasoning", or after making any code commits. Automatically creates structured tracking files that explain the reasoning behind each code change, linking explanations to specific git commits and diff hunks. Activate this skill whenever code changes are committed to provide visibility into what was changed and why.
 allowed-tools:
   - Bash(${CLAUDE_PLUGIN_ROOT}/scripts/codewalk.sh:*)
@@ -84,11 +84,14 @@ type FileChange = {
 };
 ```
 
-## Git Commands Reference
+## Script Commands Reference
 
-- Get current commit hash: `git rev-parse --short HEAD`
-- View commit diff with hunks: `git show <commit> --format=""`
-- List files changed: `git show <commit> --name-only --format=""`
+Always use the codewalk script for git operations:
+
+- Get current commit hash: `${CLAUDE_PLUGIN_ROOT}/scripts/codewalk.sh hash`
+- View commit diff with hunks: `${CLAUDE_PLUGIN_ROOT}/scripts/codewalk.sh show <commit>`
+- Show current config: `${CLAUDE_PLUGIN_ROOT}/scripts/codewalk.sh config`
+- Get tracking file path: `${CLAUDE_PLUGIN_ROOT}/scripts/codewalk.sh tracking-path <hash>`
 
 Hunks are numbered 1, 2, 3... **per file**, in order of appearance. Each `@@` line in the diff starts a new hunk. Numbering resets to 1 for each file in the commit.
 
@@ -205,7 +208,7 @@ I'll add a dark mode toggle. This requires changes to all three files.
 </ASSISTANT>
 
 <NOTE>
-After committing, run `git show c3d4e5f --format=""` to count hunks:
+After committing, run `${CLAUDE_PLUGIN_ROOT}/scripts/codewalk.sh show c3d4e5f` to count hunks:
 - index.html: 1 hunk
 - styles.css: 3 hunks
 - app.js: 3 hunks
