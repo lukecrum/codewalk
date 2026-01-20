@@ -35,15 +35,15 @@ if [ "$RUN_CHECKS" = false ]; then
   exit 0
 fi
 
-# Skip merge commits (they have a second parent)
-if git rev-parse --verify HEAD^2 &>/dev/null; then
-  exit 0
-fi
-
-# Check for uncommitted changes
+# Check for uncommitted changes (before any other checks)
 if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
   echo '{"decision": "block", "reason": "Uncommitted code changes detected. Run: git add -A && git commit -m \"descriptive message\", then create the codewalk tracking file."}' >&2
   exit 2
+fi
+
+# Skip merge commits (they have a second parent)
+if git rev-parse --verify HEAD^2 &>/dev/null; then
+  exit 0
 fi
 
 # Check if last commit has a tracking file
