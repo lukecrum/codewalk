@@ -77,6 +77,60 @@ globalDir: ~/.codewalk
 - Tracking files stored in `.codewalk/<hash>.json` in the project
 - Best for: Projects where team visibility of tracking data is important
 
+## Usage Guide
+
+### How It Works
+
+1. Claude makes code changes as usual
+2. Claude commits immediately after changes (enforced by design)
+3. Claude creates a tracking file linking reasoning to diff hunks
+4. A stop hook blocks session exit until tracking is complete
+
+### Important: Don't Interrupt the Agent Loop
+
+**If you interrupt Claude (Ctrl+C, Escape, or closing the terminal) while it's working, the commit and tracking file will not be created.** Let Claude complete its work before ending the session.
+
+The stop hook only runs when Claude tries to end normally—interruptions bypass it entirely. If you must interrupt:
+1. Check `git status` for uncommitted changes
+2. Commit manually if needed
+3. Start a new session and ask Claude to create the tracking file
+
+### Best Practices
+
+**Let Claude finish its work**
+The plugin is designed around Claude committing and tracking automatically. Avoid interrupting mid-task.
+
+**Commit frequently**
+The stop hook blocks if uncommitted changes exist. Claude is configured to commit immediately after making changes.
+
+**Use global storage for personal tracking**
+Global storage (default) keeps tracking files out of your repo.
+
+**Use local storage for shared visibility**
+Use local storage if you want tracking files in the project directory. Add `.codewalk/` to `.gitignore` if you want them untracked.
+
+### Viewing Changes
+
+Use the visualizer to see logical changes:
+
+```bash
+npx codewalk visualize
+```
+
+### Troubleshooting
+
+**Session won't end / "Uncommitted changes detected"**
+Run `git add -A && git commit -m "your message"` then let Claude create the tracking file.
+
+**Session won't end / "Missing tracking file"**
+Ask Claude to create the tracking file, or run `/codewalk` to trigger the skill.
+
+**Tracking files in wrong location**
+Run `/codewalk-config` to reconfigure storage settings.
+
+**Interrupted session left uncommitted changes**
+Check `git status`, commit manually, then start a new session to create the tracking file.
+
 ## Appendix A - Tracking files
 
 ### Schema
