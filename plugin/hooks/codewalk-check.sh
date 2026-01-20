@@ -5,7 +5,7 @@
 
 # Parse stdin JSON for transcript_path
 STDIN_JSON=$(cat)
-TRANSCRIPT_PATH=$(echo "$STDIN_JSON" | jq -r '.transcript_path // empty')
+TRANSCRIPT_PATH=$(echo "$STDIN_JSON" | grep -o '"transcript_path"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"transcript_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' || echo "")
 
 # If no transcript path, fall back to full checks (conservative)
 RUN_CHECKS=false
@@ -37,7 +37,7 @@ fi
 
 # Check for uncommitted changes (before any other checks)
 if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
-  echo '{"decision": "block", "reason": "Uncommitted code changes detected. Run: git add -A && git commit -m \"descriptive message\", then create the codewalk tracking file."}' >&2
+  echo '{"decision": "block", "reason": "Uncommitted code changes detected. Invoke the /codewalk skill to commit and create the tracking file."}' >&2
   exit 2
 fi
 
@@ -65,12 +65,12 @@ if [ -n "$LAST_HASH" ]; then
   # Check the appropriate location based on storage mode
   if [ "$STORAGE" = "global" ]; then
     if [ ! -f "${GLOBAL_DIR}/${REPO_NAME}/${LAST_HASH}.json" ]; then
-      echo '{"decision": "block", "reason": "Missing tracking file for commit '"${LAST_HASH}"'. Create '"${GLOBAL_DIR}/${REPO_NAME}/${LAST_HASH}"'.json with the codewalk schema."}' >&2
+      echo '{"decision": "block", "reason": "Missing tracking file for commit '"${LAST_HASH}"'. Invoke the /codewalk skill to create the tracking file."}' >&2
       exit 2
     fi
   else
     if [ ! -f ".codewalk/${LAST_HASH}.json" ]; then
-      echo '{"decision": "block", "reason": "Missing tracking file for commit '"${LAST_HASH}"'. Create .codewalk/'"${LAST_HASH}"'.json with the codewalk schema."}' >&2
+      echo '{"decision": "block", "reason": "Missing tracking file for commit '"${LAST_HASH}"'. Invoke the /codewalk skill to create the tracking file."}' >&2
       exit 2
     fi
   fi
