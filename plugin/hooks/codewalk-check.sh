@@ -37,7 +37,7 @@ fi
 
 # Check for uncommitted changes (before any other checks)
 if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
-  echo '{"decision": "block", "reason": "Uncommitted code changes detected. Run: codewalk.sh commit -m \"descriptive message\", then create the tracking file with codewalk.sh write-tracking <hash>."}' >&2
+  echo '{"decision": "block", "reason": "Uncommitted code changes detected. Invoke the /codewalk skill to commit and create the tracking file."}' >&2
   exit 2
 fi
 
@@ -65,12 +65,12 @@ if [ -n "$LAST_HASH" ]; then
   # Check the appropriate location based on storage mode
   if [ "$STORAGE" = "global" ]; then
     if [ ! -f "${GLOBAL_DIR}/${REPO_NAME}/${LAST_HASH}.json" ]; then
-      echo '{"decision": "block", "reason": "Missing tracking file for commit '"${LAST_HASH}"'. Use codewalk.sh write-tracking '"${LAST_HASH}"' to create the tracking file."}' >&2
+      echo '{"decision": "block", "reason": "Missing tracking file for commit '"${LAST_HASH}"'. Invoke the /codewalk skill to create the tracking file."}' >&2
       exit 2
     fi
   else
     if [ ! -f ".codewalk/${LAST_HASH}.json" ]; then
-      echo '{"decision": "block", "reason": "Missing tracking file for commit '"${LAST_HASH}"'. Use codewalk.sh write-tracking '"${LAST_HASH}"' to create the tracking file."}' >&2
+      echo '{"decision": "block", "reason": "Missing tracking file for commit '"${LAST_HASH}"'. Invoke the /codewalk skill to create the tracking file."}' >&2
       exit 2
     fi
   fi
