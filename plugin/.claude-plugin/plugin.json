@@ -10,6 +10,5 @@
     "git",
     "tracking",
     "visualization"
-  ],
-  "hooks": "./hooks/hooks.json"
+  ]
 }
