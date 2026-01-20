@@ -1,6 +1,8 @@
 ---
 name: Codewalk
 description: This skill should be used when the user asks to "track changes", "explain code changes", "create a walkthrough", "document reasoning", or after making any code commits. Automatically creates structured tracking files that explain the reasoning behind each code change, linking explanations to specific git commits and diff hunks. Activate this skill whenever code changes are committed to provide visibility into what was changed and why.
+allowed-tools:
+  - Bash(${CLAUDE_PLUGIN_ROOT}/scripts/codewalk.sh:*)
 ---
 
 # codewalk
@@ -102,24 +104,29 @@ Hunks are numbered 1, 2, 3... in order of appearance. Each `@@` line in the diff
 
 After making code changes, commit them RIGHT AWAY:
 
-1. Check if a git repo exists with `git status`. Only run `git init` if there isn't one.
-2. Commit: `git add -A && git commit -m "descriptive message"`
-3. Get the commit hash: `git rev-parse --short HEAD`
+1. Check if a git repo exists: `${CLAUDE_PLUGIN_ROOT}/scripts/codewalk.sh status`
+2. Commit: `${CLAUDE_PLUGIN_ROOT}/scripts/codewalk.sh commit -m "descriptive message"`
+3. Get the commit hash: `${CLAUDE_PLUGIN_ROOT}/scripts/codewalk.sh hash`
 
 ### Step 2: Create Tracking File
 
-**For `storage: global` (default):**
+Write tracking file (pipes JSON to stdin, auto-creates directory, validates):
 
-1. Get repo name: `basename $(git rev-parse --show-toplevel)`
-2. Create directory if needed: `mkdir -p ~/.codewalk/<repo-name>` (or custom globalDir)
-3. Create tracking file at `<globalDir>/<repo-name>/<hash>.json`
-4. Validate JSON: `python3 -c "import json; json.load(open('<path-to-file>.json'))"`
+```bash
+echo '<json-content>' | ${CLAUDE_PLUGIN_ROOT}/scripts/codewalk.sh write-tracking <hash>
+```
 
-**For `storage: local`:**
+The script automatically:
+- Reads your config from `.claude/codewalk.local.md`
+- Creates the storage directory if needed
+- Validates the JSON before writing
+- Writes to the correct path based on your storage setting
 
-1. Create tracking file at `.codewalk/<hash>.json`
-2. Do NOT stage or commit the tracking file (leave it untracked)
-3. Validate JSON: `python3 -c "import json; json.load(open('.codewalk/<hash>.json'))"`
+### For Refinements (Amending Commits)
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/scripts/codewalk.sh amend
+```
 
 ### General Guidelines
 
@@ -133,8 +140,8 @@ If the user requests changes to something you just did (e.g., "use different col
 
 **If it's part of the same logical task:**
 
-1. Amend the code commit: `git add -A && git commit --amend --no-edit`
-2. Get the NEW commit hash (amending changes the hash): `git rev-parse --short HEAD`
+1. Amend the code commit: `${CLAUDE_PLUGIN_ROOT}/scripts/codewalk.sh amend`
+2. Get the NEW commit hash (amending changes the hash): `${CLAUDE_PLUGIN_ROOT}/scripts/codewalk.sh hash`
 3. Delete the old tracking file and create a new one with the new hash
 4. The reasoning should describe the final result, not the iteration history
 
