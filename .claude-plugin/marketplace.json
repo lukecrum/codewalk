@@ -13,7 +13,7 @@
       "name": "codewalk",
       "source": "./plugin",
       "description": "Track and visualize AI-assisted code changes with structured reasoning. Creates .codewalk/<commit>.json files that explain why changes were made.",
-      "version": "1.2.3",
+      "version": "1.2.4",
       "author": {
         "name": "Luke Crum"
       },
