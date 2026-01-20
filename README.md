@@ -43,12 +43,19 @@ Groups all changes by their reasoning text across commits, sorted chronologicall
 
 Once installed, Claude will automatically create tracking files for every commit via a stop hook that enforces tracking before session exit.
 
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `/codewalk:codewalk` | Create a tracking file for the latest commit |
+| `/codewalk:configure` | Interactive configuration wizard |
+
 ### Configuration
 
 Run the interactive configuration wizard:
 
 ```
-/codewalk-config
+/codewalk:configure
 ```
 
 Or manually create `.claude/codewalk.local.md`:
@@ -126,7 +133,7 @@ Run `git add -A && git commit -m "your message"` then let Claude create the trac
 Ask Claude to create the tracking file, or run `/codewalk` to trigger the skill.
 
 **Tracking files in wrong location**
-Run `/codewalk-config` to reconfigure storage settings.
+Run `/codewalk:configure` to reconfigure storage settings.
 
 **Interrupted session left uncommitted changes**
 Check `git status`, commit manually, then start a new session to create the tracking file.
