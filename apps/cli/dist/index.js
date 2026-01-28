@@ -20751,7 +20751,7 @@ import * as path3 from "path";
 import * as os2 from "os";
 import { execSync as execSync2 } from "child_process";
 var DEFAULT_SETTINGS = {
-  storage: "local",
+  storage: "global",
   autoCommit: true,
   globalDir: "~/.codewalk"
 };
