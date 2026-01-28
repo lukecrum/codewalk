@@ -10,7 +10,7 @@ export interface CodewalkSettings {
 }
 
 export const DEFAULT_SETTINGS: CodewalkSettings = {
-  storage: 'local',
+  storage: 'global',
   autoCommit: true,
   globalDir: '~/.codewalk',
 };
